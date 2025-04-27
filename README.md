@@ -10,6 +10,13 @@ TENSORFLOW_VERSION="2.13.0"
 REQUIRED_DRIVER_VERSION="550"
 ```
 
+Please be aware that this approach is what worked for me and I decided to 'automate' this setup with a script to save the future me some time. This approach may not neccessarily be the 'best' or only way to do this but for my setup it works for me. There is not a great deal of information for setting this up on linux (or at least I couln't find much), but these resources may help if this script doen't work for you (YMMV):
+
+- [twivel guide](https://pixinsight.com/forum/index.php?threads/procedure-to-enable-gpu-acceleration-for-bxt-starnet-etc-within-linux-mint-with-a-supported-nvidia-graphics-card.23356/)
+- [lblock guide](https://pixinsight.com/forum/index.php?threads/gpu-acceleration-for-pixinsight-with-linux-kubuntu-or-ubuntu-using-rc-astro-tools-eg-starxterminator-or-starnet.22163/)
+- [steve D guide](https://pixinsight.com/forum/index.php?threads/how-to-gpu-accelerate-starxterminator-and-starnet2-on-linux.19773/)
+- [Ajay guide](https://pixinsight.com/forum/index.php?threads/gpu-accelerated-starnet-v2-working-with-cuda-and-libtensorflow-gpu-under-linux.18180/)
+
 ## Key Features
 Installs the following software components:
 
@@ -25,7 +32,7 @@ Installs the following software components:
 ## **Pre-requisites**
 
 Before running the script, ensure the following:
-1. **Ubuntu 24.04** installed on the system
+1. **Ubuntu 24.04** installed on the system (may work with other versions of Ubuntu but untested)
 2. **Root privileges** (to install system-wide software)
 3. **NVIDIA GeForce RTX 2060 GPU** (might work with other Nvidia GPU's but untested)
 4. **Internet connection** for downloading the required software
