@@ -10,7 +10,7 @@ TENSORFLOW_VERSION="2.13.0"
 REQUIRED_DRIVER_VERSION="550"
 ```
 
-Please be aware that this approach is what worked for me and I decided to 'automate' this setup with a script to save the future me some time. This approach may not neccessarily be the 'best' or only way to do this but for my setup it works for me. There is not a great deal of information for setting this up on linux (or at least I couln't find much), but these resources may help if this script doen't work for you (YMMV):
+Please be aware that this approach is what worked for me and I decided to 'automate' this setup with a script to save the future me some time. This approach may not neccessarily be the 'best' or only way to do this but for my setup it works for me. There is not a great deal of information for setting this up on linux (or at least I couldn't find much), but these resources may help if this script doen't work for you (YMMV):
 
 - [twivel guide](https://pixinsight.com/forum/index.php?threads/procedure-to-enable-gpu-acceleration-for-bxt-starnet-etc-within-linux-mint-with-a-supported-nvidia-graphics-card.23356/)
 - [lblock guide](https://pixinsight.com/forum/index.php?threads/gpu-acceleration-for-pixinsight-with-linux-kubuntu-or-ubuntu-using-rc-astro-tools-eg-starxterminator-or-starnet.22163/)
