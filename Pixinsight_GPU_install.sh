@@ -259,7 +259,7 @@ install_cuda() {
     echo "🔧 Installing CUDA Toolkit $CUDA_VERSION..."
 
     cd "$DOWNLOAD_DIR"
-    CUDA_INSTALLER="cuda_${CUDA_VERSION}_linux.run"
+    CUDA_INSTALLER="cuda_${CUDA_VERSION}_520.61.05_linux.run"
 
     if [ ! -f "$CUDA_INSTALLER" ]; then
         wget -nc -c https://developer.download.nvidia.com/compute/cuda/${CUDA_VERSION}/local_installers/$CUDA_INSTALLER
