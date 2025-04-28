@@ -1,6 +1,6 @@
 # PixInsight GPU Software Installer (Ubuntu 24.04 + RTX 2060)
 
-This script automates the installation and verification of NVIDIA CUDA Toolkit, cuDNN, and TensorFlow C API on Ubuntu 24.04, with support for NVIDIA GeForce RTX 2060 GPU. It helps set up these GPU-accelerated libraries to work with NoiseXTerminator, BlurXTerminator, and StarXTerminator in PixInsight. This script also provides options for checking and installing missing prerequisites, verifying installations, and ensuring compatibility. Please be aware that I have only tested this on Ubuntu 24.04, with a NVIDIA GeForce RTX 2060 GPU and NVIDIA driver version 550.120. If you would like to use this script with other NVIDIA GPU's and NVIDIA drivers you will need to determine which version of CUDA, cuDNN, TensorFlow and NVIDIA driver will work with your GPU and modify the script accordingly (see [this](https://www.tensorflow.org/install/source#gpu) table. You can modify these software versions by changing the following variables in the script:
+This script automates the installation and verification of NVIDIA CUDA Toolkit, cuDNN, and TensorFlow C API on Ubuntu 24.04, with support for NVIDIA GeForce RTX 2060 GPU. It helps set up these GPU-accelerated libraries to work with NoiseXTerminator, BlurXTerminator, and StarXTerminator in PixInsight. This script also provides options for checking and installing missing prerequisites, verifying installations, and ensuring compatibility. Please be aware that I have only tested this on Ubuntu 24.04, with a NVIDIA GeForce RTX 2060 GPU and NVIDIA driver version 550.120. If you would like to use this script with other NVIDIA GPU's and NVIDIA drivers you will need to determine which version of CUDA, cuDNN, TensorFlow and NVIDIA driver will work with your GPU and modify the script accordingly (see [this](https://www.tensorflow.org/install/source#gpu) table). You can modify these software versions by changing the following variables in the script:
 
 ```bash
 CUDA_VERSION="11.8.0"
@@ -19,20 +19,14 @@ Please be aware that this approach is what worked for me and I decided to 'autom
 
 ## Key Features
 Installs the following software components:
-
-- **CUDA 11.8**
-- **cuDNN 8.9.4.25**
-- **TensorFlow 2.13.0 C API**
-
-- Option to install specific components or all components
-- Options to verify installation and ensure that dependencies are met
-- Checks if the `nouveau` driver is active. If the nouveau driver is active, the script will stop and prompt the user to disable it 
-- Verifies that the necessary NVIDIA driver is installed and compatible
+- CUDA 11.8
+- cuDNN 8.9.4.25
+- TensorFlow 2.13.0 C API
 
 ## **Pre-requisites**
 
 Before running the script, ensure the following:
-1. **Ubuntu 24.04** installed on the system (may work with other versions of Ubuntu but untested)
+1. **Ubuntu 24.04** installed on the system (may work with other versions/flavours of Ubuntu but untested)
 2. **Root privileges** (to install system-wide software)
 3. **NVIDIA GeForce RTX 2060 GPU** (might work with other Nvidia GPU's but untested)
 4. **Internet connection** for downloading the required software
@@ -72,7 +66,7 @@ Upon running, you will be presented with the following options in an interactive
 7) Verify installed components
 8) Quit
 
-**Option 1:** Installs missing system packages like `build-essential`, `wget`, `curl`, etc. Also checks if a compatible NVIDIA GPU is present on the system and if the correct NVIDIA driver is installed. It will also check if the Nouveau driver is currently being used. If the nouveau driver is active, the script will stop and prompt the user to disable it. Checks whether PixInsight is installed. This Option is useful as a quick check prior to installing other (or all) components.
+**Option 1:** Installs missing system packages like `build-essential`, `wget`, `curl`, etc. Also checks if a compatible NVIDIA GPU is present on the system and if the correct NVIDIA driver is installed. It will also check if the Nouveau driver is currently being used. If the nouveau driver is active, the script will stop and prompt the user to disable it. Checks whether a working installation of PixInsight is present on the system. This Option is useful as a quick check prior to installing other (or all) components.
 
 **Option 2:** Installs only the CUDA Toolkit.
 
@@ -98,7 +92,7 @@ source ~/.bashrc
 
 ## Notes
 
-1. To install cuDNN, you must manually download the cuDNN 8.9.4.25 TAR archive from [NVIDIA's cuDNN archive](https://developer.nvidia.com/rdp/cudnn-archive). After downloading, you’ll be prompted to enter the **FULL** file path (e.g., `/home/myusername/Downloads/cudnn-linux-x86_64-8.9.4.25_cuda11-archive.tar.xz`) during installation (Option 3 or Option 5 above). A free NVIDIA Developer Program account is required for the download, which is why manual download is necessary. Unlike cuDNN, CUDA and TensorFlow are automatically downloaded to `~/Downloads` without such requirements.
+1. To install cuDNN, you must manually download the cuDNN 8.9.4.25 TAR archive from [NVIDIA's cuDNN archive](https://developer.nvidia.com/rdp/cudnn-archive). After downloading, you’ll be prompted to enter the **FULL** file path (e.g., `/home/myusername/Downloads/cudnn-linux-x86_64-8.9.4.25_cuda11-archive.tar.xz`) during installation (Option 3 or Option 5 above). A free NVIDIA Developer Program account is required for the download, which is why manual download is necessary. Unlike cuDNN, both CUDA and TensorFlow are automatically downloaded to `~/Downloads` without such requirements.
 
 2. After installing CUDA, cuDNN, and TensorFlow, make sure to either reboot your system or re-source your `~/.bashrc` file to ensure the environment variables are properly set:
 
