@@ -6,12 +6,11 @@ CUDA_VERSION="11.8.0"
 CUDA_SHORT="11.8"
 CUDNN_VERSION="8.9.4.25"
 TENSORFLOW_VERSION="2.13.0"
-DOWNLOAD_DIR="$HOME/Downloads"
 REQUIRED_DRIVER_VERSION="550"  # Update this based on compatibility with your CUDA version
 PIXINSIGHT_DIR="/opt/PixInsight"
 PIXINSIGHT_BIN="/usr/bin/PixInsight"
-
 USER_HOME=$(getent passwd "${SUDO_USER:-$(logname)}" | cut -d: -f6)
+DOWNLOAD_DIR="$USER_HOME/Downloads"
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -301,22 +300,29 @@ install_cudnn() {
         return
     fi
 
-    echo "🔧 Installing cuDNN $CUDNN_VERSION for CUDA $CUDA_SHORT..."
+    echo "🔧 Installing cuDNN ${CUDNN_VERSION} for CUDA ${CUDA_SHORT}..."
 
-    echo "⚠️ Please manually download cuDNN 8.9.4.25 TAR archive from:"
-    echo "👉 https://developer.nvidia.com/rdp/cudnn-archive"
-    echo "Download 'cuDNN Runtime Library for Linux (x86_64)' for CUDA 11.x."
-    read -rp "📦 Enter FULL PATH to downloaded cuDNN tar file: " cudnn_tar
+    # look for a downloaded cuDNN archive in DOWNLOAD_DIR
+    local default_tar="${DOWNLOAD_DIR}/cudnn-linux-x86_64-${CUDNN_VERSION}_cuda${CUDA_SHORT/.8/}-archive.tar.xz"
+    if [[ -f "$default_tar" ]]; then
+        echo "📦 Found cuDNN archive tar file in ~/Downloads: $default_tar"
+        cudnn_tar="$default_tar"
+    else
+        echo "⚠️ cuDNN archive tar file not found in ${DOWNLOAD_DIR}."
+        echo "👉 Please download cuDNN ${CUDNN_VERSION} for CUDA ${CUDA_SHORT} from NVIDIA cuDNN Archive"
+        read -rp "📦 Enter FULL PATH to downloaded cuDNN tar file: " cudnn_tar
+    fi
 
-    if [ ! -f "$cudnn_tar" ]; then
-        echo "❌ ERROR: cuDNN tar file not found at $cudnn_tar!"
+    if [[ ! -f "$cudnn_tar" ]]; then
+        echo "❌ ERROR: cuDNN archive tar file not found at $cudnn_tar!"
         exit 1
     fi
 
     tar -xvf "$cudnn_tar" -C "$DOWNLOAD_DIR/"
-    cd "$DOWNLOAD_DIR/cuda"
+    # assume extraction creates a cuda directory
+    cd "$DOWNLOAD_DIR/cuda" || exit 1
 
-    if [ ! -d "include" ] || [ ! -d "lib64" ]; then
+    if [[ ! -d "include" || ! -d "lib64" ]]; then
         echo "❌ ERROR: cuDNN archive did not extract correctly"
         exit 1
     fi
