@@ -92,9 +92,9 @@ source ~/.bashrc
 
 ## Notes
 
-1. To install cuDNN, you must first manually download cuDNN from [NVIDIA's cuDNN archive](https://developer.nvidia.com/rdp/cudnn-archive).  Select 'Download cuDNN v8.9.4 (August 8th, 2023), for CUDA 11.x'  and then 'Local Installer for Linux x86_64 (Tar)'. Download this file to `~/Downloads`. When using the script you’ll be prompted to enter the **FULL** file path (e.g., `/home/myusername/Downloads/cudnn-linux-x86_64-8.9.4.25_cuda11-archive.tar.xz`) during installation (Option 3 or Option 5 above). A free NVIDIA Developer Program account is required for the download, which is why manual download is necessary. Unlike cuDNN, both CUDA and TensorFlow are automatically downloaded to `~/Downloads` without such requirements.
+1. To install cuDNN, you must first manually download cuDNN from [NVIDIA's cuDNN archive](https://developer.nvidia.com/rdp/cudnn-archive).  Select '**Download cuDNN v8.9.4 (August 8th, 2023), for CUDA 11.x**' and then '**Local Installer for Linux x86_64 (Tar)**'. Download this file to `~/Downloads` but do not extract the tar file. When using the script you’ll be prompted to enter the **FULL** file path (e.g., `/home/myusername/Downloads/cudnn-linux-x86_64-8.9.4.25_cuda11-archive.tar.xz`) during installation (Option 3 or Option 5 above). A free NVIDIA Developer Program account is required for the download, which is why manual download is necessary. Unlike cuDNN, both CUDA and TensorFlow are automatically downloaded to `~/Downloads` without the need for an account.
 
-2. Use Option 6 if you need to re-install PixInsight but already have CUDA, cuDNN and TensorFlow installed. For example , reinstalling  after a PixInsight major update. 
+2. Use Option 6 if you need to re-install PixInsight but already have CUDA, cuDNN and TensorFlow installed. For example , installing a new version of PixInsight. 
 
 3. After installing CUDA, cuDNN, and TensorFlow, make sure to either reboot your system or re-source your `~/.bashrc` file to ensure the environment variables are properly set:
 
