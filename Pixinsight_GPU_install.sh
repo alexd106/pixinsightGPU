@@ -108,6 +108,36 @@ check_prerequisites() {
     fi
 }
 
+verify_pixinsight_installation() {
+    echo "🔧 Verifying PixInsight installation..."
+
+    # Check install directory exists
+    PIXI_DIR="/opt/PixInsight"
+    if [ ! -d "$PIXI_DIR" ]; then
+        echo "❌ ERROR: PixInsight directory not found at $PIXI_DIR."
+        return 1
+    fi
+
+    # Check for main executable
+    PIXI_BIN="$PIXI_DIR/bin/PixInsight"
+    if [ ! -x "$PIXI_BIN" ]; then
+        echo "❌ ERROR: PixInsight executable not found or not executable at $PIXI_BIN."
+        echo "    Ensure that PixInsight is installed correctly and permissions are set."
+        return 1
+    fi
+
+    # Try to run a harmless command to confirm it starts
+    if ! "$PIXI_BIN" --help &>/dev/null; then
+        echo "⚠️  WARNING: PixInsight executable ran but did not return help output."
+        echo "    It may be corrupted or missing dependencies."
+    else
+        echo "PixInsight executable responded to --help."
+    fi
+
+    echo "✅ PixInsight installation appears valid."
+    return 0
+}
+
 # Check if CUDA is installed
 check_cuda_installed() {
     if [ -d "/usr/local/cuda-${CUDA_SHORT}" ]; then
@@ -338,6 +368,19 @@ install_tensorflow() {
     echo "✅ TensorFlow installed successfully."
 }
 
+# Update PixInsight’s TensorFlow libraries after PixInsight update
+update_pxi_tf() {
+    echo "🔧 Updating PixInsight TensorFlow libraries..."
+    if [ -d /opt/PixInsight/bin/lib ]; then
+        sudo mkdir -p /opt/PixInsight/bin/lib/backup_tf
+        sudo mv /opt/PixInsight/bin/lib/libtensorflow* /opt/PixInsight/bin/lib/backup_tf/ 2>/dev/null || true
+        sudo cp /usr/local/lib/libtensorflow* /opt/PixInsight/bin/lib/
+        echo "✅ PixInsight TensorFlow libraries updated."
+    else
+        echo "⚠️  PixInsight not found at /opt/PixInsight. Cannot update."
+        return 1
+    fi
+}
 # === Main Menu ===
 
 echo "🚀 PixInsight GPU software installer (Ubuntu 24.04 + RTX 2060)"
@@ -348,10 +391,11 @@ echo " 2) Install CUDA only"
 echo " 3) Install cuDNN only"
 echo " 4) Install TensorFlow C API only"
 echo " 5) Install ALL GPU software components"
-echo " 6) Verify Installed Components"
-echo " 7) Quit"
+echo " 6) Update TensorFlow after PixInsight update only"
+echo " 7) Verify installed components"
+echo " 8) Quit"
 echo "=============================================="
-read -rp "Enter choice [1-7]: " choice
+read -rp "Enter choice [1-8]: " choice
 
 case $choice in
     1)
@@ -386,11 +430,16 @@ case $choice in
         install_tensorflow
         ;;
     6)
-	verify_cuda_installation
+        check_tensorflow_installed
+        verify_tensorflow_installation
+        update_pxi_tf	
+        ;;
+    7)
+        verify_cuda_installation
         verify_cudnn_installation
         verify_tensorflow_installation
         ;;
-    7)
+    8)
         echo "❌ Exiting without doing anything."
         exit 0
         ;;
