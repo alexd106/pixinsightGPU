@@ -66,13 +66,13 @@ Upon running, you will be presented with the following options in an interactive
 7) Verify installed components
 8) Quit
 
-**Option 1:** Installs missing system packages like `build-essential`, `wget`, `curl`, etc. Also checks if a compatible NVIDIA GPU is present on the system and if the correct NVIDIA driver is installed. It will also check if the Nouveau driver is currently being used. If the nouveau driver is active, the script will stop and prompt the user to disable it. Checks whether a working installation of PixInsight is present on the system. This Option is useful as a quick check prior to installing other (or all) components.
+**Option 1:** Installs missing system packages like `build-essential`, `wget`, `curl`, etc. Also checks if a compatible NVIDIA GPU is present on the system and if the correct NVIDIA driver is installed. It will also check if the Nouveau driver is currently being used. If the nouveau driver is active, the script will stop and prompt the user to disable it. Checks whether a working installation of PixInsight is present on the system. This Option is useful as a quick check prior to installing other (or all) components (although each component will check pre-requisites anyway). 
 
 **Option 2:** Installs only the CUDA Toolkit.
 
 **Option 3:** Installs only cuDNN (see **Note 1** below).
 
-**Option 4:** Installs only TensorFlow C API.
+**Option 4:** Installs only TensorFlow C API and makes TensorFlow libraries available to PiXinsight.
 
 **Option 5:** Installs all components: CUDA, cuDNN and TensorFlow (see **Note 1** below).
 

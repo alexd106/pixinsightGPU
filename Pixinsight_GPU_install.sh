@@ -11,10 +11,7 @@ REQUIRED_DRIVER_VERSION="550"  # Update this based on compatibility with your CU
 PIXINSIGHT_DIR="/opt/PixInsight"
 PIXINSIGHT_BIN="/usr/bin/PixInsight"
 
-# Colors for output
-#GREEN="\033[0;32m"
-#RED="\033[0;31m"
-#NC="\033[0m" # No Color
+USER_HOME=$(getent passwd "${SUDO_USER:-$(logname)}" | cut -d: -f6)
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -31,7 +28,7 @@ check_nvidia_gpu() {
     # Check for NVIDIA GPU using lspci
     GPU_INFO=$(lspci | grep -i nvidia)
     if [ -z "$GPU_INFO" ]; then
-        echo "❌ ERROR: No NVIDIA GPU detected. Please ensure that the GPU is installed and recognized by the system."
+        echo "❌ ERROR: No NVIDIA GPU detected. Please ensure that the GPU is installed and recognized by the system"
         exit 1
     else
         echo "✅ NVIDIA GPU detected: $GPU_INFO"
@@ -44,16 +41,16 @@ check_nvidia_driver() {
 
     # Check if nouveau driver is active
     if lsmod | grep -i nouveau &> /dev/null; then
-        echo "❌ ERROR: Nouveau driver is currently active. Please disable it and install an official NVIDIA driver."
-        echo "ℹ️  Tip: Create a /etc/modprobe.d/blacklist-nouveau.conf file to blacklist nouveau."
+        echo "❌ ERROR: Nouveau driver is active. Please blacklist it and install an official NVIDIA driver"
+        echo "ℹ️  Tip: Create a /etc/modprobe.d/blacklist-nouveau.conf file to blacklist nouveau"
         exit 1
     else
-    	echo "✅ Nouveau driver not active."
+    	echo "✅ Nouveau driver not active"
     fi
 
     # Check if nvidia-smi is available
     if ! command -v nvidia-smi &> /dev/null; then
-        echo "❌ ERROR: NVIDIA driver not found. Please install the NVIDIA driver version $REQUIRED_DRIVER_VERSION."
+        echo "❌ ERROR: NVIDIA driver not found. Please install NVIDIA driver >= $REQUIRED_DRIVER_VERSION"
         exit 1
     fi
 
@@ -61,17 +58,17 @@ check_nvidia_driver() {
     INSTALLED_DRIVER_VERSION=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader)
 
     if [[ "$INSTALLED_DRIVER_VERSION" == "$REQUIRED_DRIVER_VERSION"* ]]; then
-        echo "✅ Compatible NVIDIA driver $INSTALLED_DRIVER_VERSION is installed."
+        echo "✅ Compatible NVIDIA driver $INSTALLED_DRIVER_VERSION is installed"
     else
-        echo "❌ ERROR: Incompatible or missing NVIDIA driver. Installed driver is $INSTALLED_DRIVER_VERSION, but you need at least version $REQUIRED_DRIVER_VERSION."
-        echo "Please install a compatible driver."
+        echo "❌ ERROR: Incompatible or missing NVIDIA driver. Installed driver is $INSTALLED_DRIVER_VERSION, but you need at least version $REQUIRED_DRIVER_VERSION"
+        echo "Please install a compatible driver"
         exit 1
     fi
 }
 
-# Function to check and install prerequisites
+# Function to check and install system prerequisites
 check_prerequisites() {
-    echo "🔍 Checking pre-requisite software..."
+    echo "🔧 Checking system pre-requisite system software..."
 
     missing_packages=()
 
@@ -104,7 +101,7 @@ check_prerequisites() {
             exit 1
         fi
     else
-        echo -e "✅ All pre-requisite software is installed."
+        echo -e "✅ All pre-requisite system software is installed"
     fi
 }
 
@@ -113,40 +110,41 @@ verify_pixinsight_installation() {
 
     # Check install directory exists
     if [ ! -d "$PIXINSIGHT_DIR" ]; then
-        echo "❌ ERROR: PixInsight directory not found at $PIXINSIGHT_DIR."
+        echo "❌ ERROR: PixInsight directory not found at $PIXINSIGHT_DIR"
         return 1
     else
-        echo "PixInsight directory found at $PIXINSIGHT_DIR."
+        echo "✅ PixInsight directory found at $PIXINSIGHT_DIR"
     fi
 
     # Check for main executable
     if [ ! -x "$PIXINSIGHT_BIN" ]; then
-        echo "❌ ERROR: PixInsight executable not found or not executable at $PIXINSIGHT_BIN."
-        echo "    Ensure that PixInsight is installed correctly and permissions are set."
+        echo "❌ ERROR: PixInsight executable not found or not executable at $PIXINSIGHT_BIN"
+        echo "    Ensure that PixInsight is installed correctly and permissions are set"
         return 1
     else
-        echo "PixInsight executable found at $PIXINSIGHT_BIN."
+        echo "✅ PixInsight executable found at $PIXINSIGHT_BIN"
     fi
 
     # Try to run a harmless command to confirm it starts
     if ! "$PIXINSIGHT_BIN" --help &>/dev/null; then
-        echo "⚠️  WARNING: PixInsight executable ran but did not return help output."
-        echo "    It may be corrupted or missing dependencies."
+        echo "⚠️  WARNING: PixInsight executable ran but did not return help output"
+        echo "    It may be corrupted or missing dependencies"
     else
-        echo "PixInsight executable responded to --help."
+        echo "✅ PixInsight executable responded"
     fi
 
-    echo "✅ PixInsight installation appears valid."
+    echo "✅ PixInsight installation appears valid"
+    echo ""
     return 0
 }
 
 # Check if CUDA is installed
 check_cuda_installed() {
     if [ -d "/usr/local/cuda-${CUDA_SHORT}" ]; then
-        echo "✅ CUDA ${CUDA_SHORT} is already installed."
+        echo "✅ CUDA ${CUDA_SHORT} is already installed"
         return 0
     else
-        echo "❌ CUDA ${CUDA_SHORT} is NOT installed."
+        echo "❌ CUDA ${CUDA_SHORT} is NOT installed"
         return 1
     fi
 }
@@ -158,8 +156,8 @@ verify_cuda_installation() {
     if check_cuda_installed; then
         if [ -f "/usr/local/cuda-${CUDA_SHORT}/bin/nvcc" ]; then
             echo "✅ CUDA nvcc compiler is present."
-            /usr/local/cuda-${CUDA_SHORT}/bin/nvcc --version
-            echo "🎯 CUDA installation looks correct."
+            /usr/local/cuda-${CUDA_SHORT}/bin/nvcc --version > /dev/null 2>&1
+            echo "🎯 CUDA installation looks correct"
         else
             echo "❌ ERROR: nvcc compiler not found. CUDA installation might be incomplete!"
             return 1
@@ -172,10 +170,10 @@ verify_cuda_installation() {
 # Check if cuDNN is installed
 check_cudnn_installed() {
     if [ -f "/usr/local/cuda-${CUDA_SHORT}/include/cudnn.h" ]; then
-        echo "✅ cuDNN ${CUDNN_VERSION} is already installed."
+        echo "✅ cuDNN ${CUDNN_VERSION} is already installed"
         return 0
     else
-        echo "❌ cuDNN ${CUDNN_VERSION} is NOT installed."
+        echo "❌ cuDNN ${CUDNN_VERSION} is NOT installed"
         return 1
     fi
 }
@@ -186,8 +184,8 @@ verify_cudnn_installation() {
 
     if check_cudnn_installed; then
         if [ -f "/usr/local/cuda-${CUDA_SHORT}/lib64/libcudnn.so" ]; then
-            echo "✅ cuDNN library is present."
-            echo "🎯 cuDNN installation looks correct."
+            echo "✅ cuDNN library is present"
+            echo "🎯 cuDNN installation looks correct"
         else
             echo "❌ ERROR: cuDNN library not found. cuDNN installation might be incomplete!"
             return 1
@@ -200,10 +198,10 @@ verify_cudnn_installation() {
 # Check if TensorFlow is installed
 check_tensorflow_installed() {
     if [ -f "/usr/local/lib/libtensorflow.so.${TENSORFLOW_VERSION}" ]; then
-        echo "✅ TensorFlow ${TENSORFLOW_VERSION} is already installed."
+        echo "✅ TensorFlow ${TENSORFLOW_VERSION} is already installed"
         return 0
     else
-        echo "❌ TensorFlow ${TENSORFLOW_VERSION} is NOT installed."
+        echo "❌ TensorFlow ${TENSORFLOW_VERSION} is NOT installed"
         return 1
     fi
 }
@@ -211,28 +209,51 @@ check_tensorflow_installed() {
 verify_tensorflow_installation() {
     echo "🔧 Verifying TensorFlow installation..."
 
-    # Check if the TensorFlow shared libraries exist
-    if [ -f "/usr/local/lib/libtensorflow.so" ] && [ -f "/usr/local/lib/libtensorflow_framework.so" ]; then
-        echo "✅ TensorFlow shared libraries are found in /usr/local/lib."
+	local all_ok=true
+    if check_tensorflow_installed; then
+    	# Check TensorFlow shared libraries
+    	if [ -f "/usr/local/lib/libtensorflow_framework.so" ]; then
+        	echo "✅ TensorFlow shared libraries are found in /usr/local/lib"
+    	else
+        	echo "❌ TensorFlow libraries are missing from /usr/local/lib"
+        	all_ok=false
+    	fi
 
-        # Optionally check if the header files exist too
-        if [ -d "/usr/local/include/tensorflow" ]; then
-            echo "✅ TensorFlow header files are found in /usr/local/include."
-            echo "🎯 TensorFlow installation looks correct."
-        else
-            echo "⚠️ TensorFlow header files are missing in /usr/local/include."
-            return 1
-        fi
-    else
-        echo "❌ TensorFlow libraries are missing from /usr/local/lib."
-        return 1
-    fi
+    	# Check TensorFlow header files
+    	if [ -d "/usr/local/include/tensorflow" ]; then
+        	echo "✅ TensorFlow header files are found in /usr/local/include"
+    	else
+        	echo "⚠️ TensorFlow header files are missing in /usr/local/include"
+        	all_ok=false
+    	fi
+
+    	# Check PixInsight’s bundled TensorFlow libs
+    	if ls $PIXINSIGHT_DIR/bin/lib/libtensorflow* &> /dev/null; then
+        	echo "⚠️ PixInsight TensorFlow libraries found in $PIXINSIGHT_DIR/bin/lib"
+        	all_ok=false
+    	else
+     		echo "✅ PixInsight TensorFlow libraries not found in $PIXINSIGHT_DIR/bin/lib"  
+    	fi
+
+    	# Check TF_FORCE_GPU_ALLOW_GROWTH in ~/.bashrc
+    	if grep -q '^export TF_FORCE_GPU_ALLOW_GROWTH="true"' $USER_HOME/.bashrc; then
+        	echo "✅ TF_FORCE_GPU_ALLOW_GROWTH is set to 'true' in ~/.bashrc"  
+    	else
+        	echo "⚠️ TF_FORCE_GPU_ALLOW_GROWTH not found in ~/.bashrc"
+        	echo "   → Add: export TF_FORCE_GPU_ALLOW_GROWTH=\"true\""
+        	all_ok=false
+    	fi
+    	if $all_ok; then
+	       	echo "🎯 Tensorflow appears to be installed correctly for PixInsight"
+	       	echo ""
+		fi
+	fi
 }
 
 # Install CUDA Toolkit
 install_cuda() {
     if check_cuda_installed; then
-        echo "⚠️ CUDA is already installed. Skipping CUDA installation."
+        echo "⚠️ CUDA is already installed. Skipping CUDA installation"
         return
     fi
 
@@ -242,7 +263,7 @@ install_cuda() {
     CUDA_INSTALLER="cuda_${CUDA_VERSION}_linux.run"
 
     if [ ! -f "$CUDA_INSTALLER" ]; then
-        wget --continue https://developer.download.nvidia.com/compute/cuda/${CUDA_VERSION}/local_installers/$CUDA_INSTALLER
+        wget -nc -c https://developer.download.nvidia.com/compute/cuda/${CUDA_VERSION}/local_installers/$CUDA_INSTALLER
     fi
 
     if [ ! -f "$CUDA_INSTALLER" ]; then
@@ -253,7 +274,7 @@ install_cuda() {
     chmod +x "$CUDA_INSTALLER"
 
     echo "🔧 Running CUDA installer (toolkit only)..."
-    echo "[sudo needed] Running the CUDA installer. This will install CUDA system-wide."
+    echo "[sudo needed] Running the CUDA installer. This will install CUDA system-wide"
     sudo ./"$CUDA_INSTALLER" --silent --toolkit --no-driver --no-opengl-libs --samples=0 --no-nouveau
 
     if [ ! -d "/usr/local/cuda-${CUDA_SHORT}" ]; then
@@ -270,13 +291,13 @@ install_cuda() {
 
     echo "/usr/local/cuda-${CUDA_SHORT}/lib64" | sudo tee /etc/ld.so.conf.d/cuda-${CUDA_SHORT}.conf
     sudo ldconfig   
-    echo "✅ CUDA installed successfully."
+    echo "✅ CUDA installed successfully"
 }
 
 # Install cuDNN
 install_cudnn() {
     if check_cudnn_installed; then
-        echo "⚠️ cuDNN is already installed. Skipping cuDNN installation."
+        echo "⚠️ cuDNN is already installed. Skipping cuDNN installation"
         return
     fi
 
@@ -296,12 +317,12 @@ install_cudnn() {
     cd "$DOWNLOAD_DIR/cuda"
 
     if [ ! -d "include" ] || [ ! -d "lib64" ]; then
-        echo "❌ ERROR: cuDNN archive did not extract correctly."
+        echo "❌ ERROR: cuDNN archive did not extract correctly"
         exit 1
     fi
 
     echo "🔧 Copying cuDNN files..."
-    echo "[sudo needed] Copying cuDNN files to CUDA directories."
+    echo "[sudo needed] Copying cuDNN files to CUDA directories"
     sudo cp include/cudnn*.h /usr/local/cuda-${CUDA_SHORT}/include/
     sudo cp lib64/libcudnn* /usr/local/cuda-${CUDA_SHORT}/lib64/
     sudo chmod a+r /usr/local/cuda-${CUDA_SHORT}/include/cudnn*.h /usr/local/cuda-${CUDA_SHORT}/lib64/libcudnn*
@@ -309,13 +330,13 @@ install_cudnn() {
     echo "/usr/local/cuda-${CUDA_SHORT}/lib64" | sudo tee /etc/ld.so.conf.d/cuda-${CUDA_SHORT}.conf
     sudo ldconfig
 
-    echo "✅ cuDNN installed successfully."
+    echo "✅ cuDNN installed successfully"
 }
 
 # Install TensorFlow C API
 install_tensorflow() {
     if check_tensorflow_installed; then
-        echo "⚠️ TensorFlow is already installed. Skipping TensorFlow installation."
+        echo "⚠️ TensorFlow is already installed. Skipping TensorFlow installation"
         return
     fi
 
@@ -325,7 +346,7 @@ install_tensorflow() {
     TENSORFLOW_ARCHIVE="libtensorflow-gpu-linux-x86_64-${TENSORFLOW_VERSION}.tar.gz"
 
     if [ ! -f "$TENSORFLOW_ARCHIVE" ]; then
-        wget --continue https://storage.googleapis.com/tensorflow/libtensorflow/$TENSORFLOW_ARCHIVE
+        wget -nc -c https://storage.googleapis.com/tensorflow/libtensorflow/$TENSORFLOW_ARCHIVE
     fi
 
     if [ ! -f "$TENSORFLOW_ARCHIVE" ]; then
@@ -341,7 +362,7 @@ install_tensorflow() {
     fi
 
     echo "🔧 Copying TensorFlow libraries..."
-    echo "[sudo needed] Copying TensorFlow libraries to /usr/local."
+    echo "[sudo needed] Copying TensorFlow libraries to /usr/local"
     sudo cp -r tensorflow/include/* /usr/local/include/
     sudo cp -r tensorflow/lib/* /usr/local/lib/
     sudo ldconfig
@@ -351,25 +372,25 @@ install_tensorflow() {
         exit 1
     fi
 
-    echo "✅ TensorFlow C API installed successfully."
+    echo "✅ TensorFlow C API installed successfully"
 
     echo -e "🔧 Adding TensorFlow environment variables to ~/.bashrc..."
     # Add TF_FORCE_GPU_ALLOW_GROWTH if not present
-    if ! grep -q "TF_FORCE_GPU_ALLOW_GROWTH" ~/.bashrc; then
-        echo 'export TF_FORCE_GPU_ALLOW_GROWTH="true"' >> ~/.bashrc
+    if ! grep -q "TF_FORCE_GPU_ALLOW_GROWTH" $USER_HOME/.bashrc; then
+        echo 'export TF_FORCE_GPU_ALLOW_GROWTH="true"' >> $USER_HOME/.bashrc
     fi
 
     echo "🔧 Updating PixInsight TensorFlow libraries..."
     if verify_pixinsight_installation; then
         sudo mkdir -p $PIXINSIGHT_DIR/bin/lib/backup_tf
         sudo mv $PIXINSIGHT_DIR/bin/lib/libtensorflow* $PIXINSIGHT_DIR/bin/lib/backup_tf/ 2>/dev/null || true
-        echo "✅ Old TensorFlow libraries backed up to $PIXINSIGHT_DIR/bin/lib/backup_tf."
+        echo "✅ Old TensorFlow libraries backed up to $PIXINSIGHT_DIR/bin/lib/backup_tf"
     else
         echo "⚠️ WARNING: PixInsight may not be installed yet!"
     fi
-    source ~/.bashrc
+    source $USER_HOME/.bashrc
 
-    echo "✅ TensorFlow installed successfully."
+    echo "✅ TensorFlow installed successfully"
 }
 
 # Update PixInsight’s TensorFlow libraries after PixInsight update
@@ -378,18 +399,14 @@ update_pxi_tf() {
     if verify_pixinsight_installation; then
         sudo mkdir -p $PIXINSIGHT_DIR/bin/lib/backup_tf
         sudo mv $PIXINSIGHT_DIR/bin/lib/libtensorflow* $PIXINSIGHT_DIR/bin/lib/backup_tf/ 2>/dev/null || true
-        sudo cp /usr/local/lib/libtensorflow* $PIXINSIGHT_DIR/bin/lib/
-        echo "✅ PixInsight TensorFlow libraries updated."
+        # sudo cp /usr/local/lib/libtensorflow* $PIXINSIGHT_DIR/bin/lib/
+        echo "✅ PixInsight TensorFlow libraries updated"
     else
-        echo "❌  PixInsight not found at $PIXINSIGHT_DIR. Cannot update."
+        echo "❌  PixInsight not found at $PIXINSIGHT_DIR. Cannot update"
         return 1
     fi
 }
 
-#end_of_script() {
-#    echo ""
-#    echo "🎉 Done! Remember to reboot or re-source your ~/.bashrc to load CUDA and TensorFlow paths."
-#}
 # === Main Menu ===
 while true; do
 	echo "PixInsight GPU software installer (Ubuntu 24.04 + RTX 2060)"
@@ -418,14 +435,12 @@ while true; do
 			check_prerequisites
 			check_nvidia_driver
 			install_cuda
-			#end_of_script
      	   ;;
     	3)
         	check_nvidia_gpu
         	check_prerequisites
         	check_nvidia_driver
         	install_cudnn
-        	#end_of_script
         	;;
     	4)
         	check_nvidia_gpu
@@ -433,7 +448,6 @@ while true; do
         	check_nvidia_driver
         	verify_pixinsight_installation
         	install_tensorflow
-        	#end_of_script
         	;;
     	5)
         	check_nvidia_gpu
@@ -443,7 +457,6 @@ while true; do
         	install_cuda
         	install_cudnn
         	install_tensorflow
-        	#end_of_script
         	;;
     	6)
         	check_tensorflow_installed
