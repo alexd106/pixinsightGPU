@@ -8,6 +8,8 @@ CUDNN_VERSION="8.9.4.25"
 TENSORFLOW_VERSION="2.13.0"
 DOWNLOAD_DIR="$HOME/Downloads"
 REQUIRED_DRIVER_VERSION="550"  # Update this based on compatibility with your CUDA version
+PIXINSIGHT_DIR="/opt/PixInsight"
+PIXINSIGHT_BIN="/usr/bin/PixInsight"
 
 # Colors for output
 #GREEN="\033[0;32m"
@@ -26,10 +28,8 @@ fi
 # Function to check if a valid NVIDIA GPU is present using lspci
 check_nvidia_gpu() {
     echo "🔧 Checking for NVIDIA GPU..."
-
     # Check for NVIDIA GPU using lspci
     GPU_INFO=$(lspci | grep -i nvidia)
-
     if [ -z "$GPU_INFO" ]; then
         echo "❌ ERROR: No NVIDIA GPU detected. Please ensure that the GPU is installed and recognized by the system."
         exit 1
@@ -112,26 +112,24 @@ verify_pixinsight_installation() {
     echo "🔧 Verifying PixInsight installation..."
 
     # Check install directory exists
-    PIXI_DIR="/opt/PixInsight"
-    if [ ! -d "$PIXI_DIR" ]; then
-        echo "❌ ERROR: PixInsight directory not found at $PIXI_DIR."
+    if [ ! -d "$PIXINSIGHT_DIR" ]; then
+        echo "❌ ERROR: PixInsight directory not found at $PIXINSIGHT_DIR."
         return 1
     else
-        echo "PixInsight directory found at $PIXI_DIR."
+        echo "PixInsight directory found at $PIXINSIGHT_DIR."
     fi
 
     # Check for main executable
-    PIXI_BIN="/usr/bin/PixInsight"
-    if [ ! -x "$PIXI_BIN" ]; then
-        echo "❌ ERROR: PixInsight executable not found or not executable at $PIXI_BIN."
+    if [ ! -x "$PIXINSIGHT_BIN" ]; then
+        echo "❌ ERROR: PixInsight executable not found or not executable at $PIXINSIGHT_BIN."
         echo "    Ensure that PixInsight is installed correctly and permissions are set."
         return 1
     else
-        echo "PixInsight executable found at $PIXI_BIN."
+        echo "PixInsight executable found at $PIXINSIGHT_BIN."
     fi
 
     # Try to run a harmless command to confirm it starts
-    if ! "$PIXI_BIN" --help &>/dev/null; then
+    if ! "$PIXINSIGHT_BIN" --help &>/dev/null; then
         echo "⚠️  WARNING: PixInsight executable ran but did not return help output."
         echo "    It may be corrupted or missing dependencies."
     else
@@ -270,6 +268,8 @@ install_cuda() {
     fi
     source ~/.bashrc
 
+    echo "/usr/local/cuda-${CUDA_SHORT}/lib64" | sudo tee /etc/ld.so.conf.d/cuda-${CUDA_SHORT}.conf
+    sudo ldconfig   
     echo "✅ CUDA installed successfully."
 }
 
@@ -361,9 +361,9 @@ install_tensorflow() {
 
     echo "🔧 Updating PixInsight TensorFlow libraries..."
     if verify_pixinsight_installation; then
-        sudo mkdir -p /opt/PixInsight/bin/lib/backup_tf
-        sudo mv /opt/PixInsight/bin/lib/libtensorflow* /opt/PixInsight/bin/lib/backup_tf/ 2>/dev/null || true
-        echo "✅ Old TensorFlow libraries backed up to /opt/PixInsight/bin/lib/backup_tf."
+        sudo mkdir -p $PIXINSIGHT_DIR/bin/lib/backup_tf
+        sudo mv $PIXINSIGHT_DIR/bin/lib/libtensorflow* $PIXINSIGHT_DIR/bin/lib/backup_tf/ 2>/dev/null || true
+        echo "✅ Old TensorFlow libraries backed up to $PIXINSIGHT_DIR/bin/lib/backup_tf."
     else
         echo "⚠️ WARNING: PixInsight may not be installed yet!"
     fi
@@ -376,93 +376,93 @@ install_tensorflow() {
 update_pxi_tf() {
     echo "🔧 Updating PixInsight TensorFlow libraries..."
     if verify_pixinsight_installation; then
-        sudo mkdir -p /opt/PixInsight/bin/lib/backup_tf
-        sudo mv /opt/PixInsight/bin/lib/libtensorflow* /opt/PixInsight/bin/lib/backup_tf/ 2>/dev/null || true
-        sudo cp /usr/local/lib/libtensorflow* /opt/PixInsight/bin/lib/
+        sudo mkdir -p $PIXINSIGHT_DIR/bin/lib/backup_tf
+        sudo mv $PIXINSIGHT_DIR/bin/lib/libtensorflow* $PIXINSIGHT_DIR/bin/lib/backup_tf/ 2>/dev/null || true
+        sudo cp /usr/local/lib/libtensorflow* $PIXINSIGHT_DIR/bin/lib/
         echo "✅ PixInsight TensorFlow libraries updated."
     else
-        echo "❌  PixInsight not found at /opt/PixInsight. Cannot update."
+        echo "❌  PixInsight not found at $PIXINSIGHT_DIR. Cannot update."
         return 1
     fi
 }
 
-end_of_script() {
-    echo ""
-    echo "🎉 Done! Remember to reboot or re-source your ~/.bashrc to load CUDA and TensorFlow paths."
-}
+#end_of_script() {
+#    echo ""
+#    echo "🎉 Done! Remember to reboot or re-source your ~/.bashrc to load CUDA and TensorFlow paths."
+#}
 # === Main Menu ===
+while true; do
+	echo "PixInsight GPU software installer (Ubuntu 24.04 + RTX 2060)"
+	echo "=============================================="
+	echo "Choose what you want to install:"
+	echo " 1) Check & install system pre-requisite software"
+	echo " 2) Install CUDA only"
+	echo " 3) Install cuDNN only"
+	echo " 4) Install TensorFlow C API only"
+	echo " 5) Install ALL GPU software components"
+	echo " 6) Update TensorFlow after PixInsight re-installation only"
+	echo " 7) Verify installed components"
+	echo " 8) Quit"
+	echo "=============================================="
+	read -rp "Enter choice [1-8]: " choice
 
-echo "🚀 PixInsight GPU software installer (Ubuntu 24.04 + RTX 2060)"
-echo "=============================================="
-echo "Choose what you want to install:"
-echo " 1) Check & install system pre-requisite software"
-echo " 2) Install CUDA only"
-echo " 3) Install cuDNN only"
-echo " 4) Install TensorFlow C API only"
-echo " 5) Install ALL GPU software components"
-echo " 6) Update TensorFlow after PixInsight re-installation only"
-echo " 7) Verify installed components"
-echo " 8) Quit"
-echo "=============================================="
-read -rp "Enter choice [1-8]: " choice
-
-case $choice in
-    1)
-	check_nvidia_gpu
-	check_prerequisites
-        check_nvidia_driver
-        verify_pixinsight_installation
-	;;
-    2)
-        check_nvidia_gpu
-        check_prerequisites
-        check_nvidia_driver
-        install_cuda
-        end_of_script
-        ;;
-    3)
-        check_nvidia_gpu
-        check_prerequisites
-        check_nvidia_driver
-        install_cudnn
-        end_of_script
-        ;;
-    4)
-        check_nvidia_gpu
-        check_prerequisites
-        check_nvidia_driver
-        verify_pixinsight_installation
-        install_tensorflow
-        end_of_script
-        ;;
-    5)
-        check_nvidia_gpu
-        check_prerequisites
-        check_nvidia_driver
-        verify_pixinsight_installation
-        install_cuda
-        install_cudnn
-        install_tensorflow
-        end_of_script
-        ;;
-    6)
-        check_tensorflow_installed
-        verify_tensorflow_installation
-        verify_pixinsight_installation
-        update_pxi_tf	
-        ;;
-    7)
-        verify_cuda_installation
-        verify_cudnn_installation
-        verify_tensorflow_installation
-        ;;
-    8)
-        echo "❌ Exiting without doing anything."
-        exit 0
-        ;;
-    *)
-        echo "❌ Invalid choice."
+	case $choice in
+		1)
+			check_nvidia_gpu
+			check_prerequisites
+	       	check_nvidia_driver
+	       	verify_pixinsight_installation
+			;;
+		2)
+			check_nvidia_gpu
+			check_prerequisites
+			check_nvidia_driver
+			install_cuda
+			#end_of_script
+     	   ;;
+    	3)
+        	check_nvidia_gpu
+        	check_prerequisites
+        	check_nvidia_driver
+        	install_cudnn
+        	#end_of_script
+        	;;
+    	4)
+        	check_nvidia_gpu
+        	check_prerequisites
+        	check_nvidia_driver
+        	verify_pixinsight_installation
+        	install_tensorflow
+        	#end_of_script
+        	;;
+    	5)
+        	check_nvidia_gpu
+        	check_prerequisites
+        	check_nvidia_driver
+        	verify_pixinsight_installation
+        	install_cuda
+        	install_cudnn
+        	install_tensorflow
+        	#end_of_script
+        	;;
+    	6)
+        	check_tensorflow_installed
+        	verify_tensorflow_installation
+        	verify_pixinsight_installation
+        	update_pxi_tf	
+        	;;
+    	7)
+        	verify_cuda_installation
+        	verify_cudnn_installation
+        	verify_tensorflow_installation
+        	;;
+    	8)
+        	echo "❌ Exiting."
+        	break
+        	;;
+    	*)
+        	echo "❌ Invalid choice."
         exit 1
-        ;;
-esac
-
+        	;;
+	esac
+done
