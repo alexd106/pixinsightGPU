@@ -117,17 +117,17 @@ verify_pixinsight_installation() {
         echo "❌ ERROR: PixInsight directory not found at $PIXI_DIR."
         return 1
     else
-        echo"PixInsight directory found at $PIXI_DIR."
+        echo "PixInsight directory found at $PIXI_DIR."
     fi
 
     # Check for main executable
-    PIXI_BIN="$PIXI_DIR/bin/PixInsight"
+    PIXI_BIN="/usr/bin/PixInsight"
     if [ ! -x "$PIXI_BIN" ]; then
         echo "❌ ERROR: PixInsight executable not found or not executable at $PIXI_BIN."
         echo "    Ensure that PixInsight is installed correctly and permissions are set."
         return 1
     else
-        echo"PixInsight executable found at $PIXI_BIN."
+        echo "PixInsight executable found at $PIXI_BIN."
     fi
 
     # Try to run a harmless command to confirm it starts
@@ -385,6 +385,11 @@ update_pxi_tf() {
         return 1
     fi
 }
+
+end_of_script() {
+    echo ""
+    echo "🎉 Done! Remember to reboot or re-source your ~/.bashrc to load CUDA and TensorFlow paths."
+}
 # === Main Menu ===
 
 echo "🚀 PixInsight GPU software installer (Ubuntu 24.04 + RTX 2060)"
@@ -413,12 +418,14 @@ case $choice in
         check_prerequisites
         check_nvidia_driver
         install_cuda
+        end_of_script
         ;;
     3)
         check_nvidia_gpu
         check_prerequisites
         check_nvidia_driver
         install_cudnn
+        end_of_script
         ;;
     4)
         check_nvidia_gpu
@@ -426,6 +433,7 @@ case $choice in
         check_nvidia_driver
         verify_pixinsight_installation
         install_tensorflow
+        end_of_script
         ;;
     5)
         check_nvidia_gpu
@@ -435,6 +443,7 @@ case $choice in
         install_cuda
         install_cudnn
         install_tensorflow
+        end_of_script
         ;;
     6)
         check_tensorflow_installed
@@ -456,7 +465,4 @@ case $choice in
         exit 1
         ;;
 esac
-
-echo ""
-echo "🎉 Done! Remember to reboot or re-source your ~/.bashrc to load CUDA and TensorFlow paths."
 
