@@ -63,15 +63,16 @@ The script will check if it is run as root and attempt to re-run itself using su
 
 Upon running, you will be presented with the following options in an interactive menu:
 
-1) Check & install missing system pre-requisite software
+1) Check & install system pre-requisite software
 2) Install CUDA only
 3) Install cuDNN only
 4) Install TensorFlow C API only
 5) Install ALL GPU software components
-6) Verify Installed Components
-7) Quit
+6) Update TensorFlow after PixInsight re-installation only" 
+7) Verify installed components
+8) Quit
 
-**Option 1:** Installs missing packages like `build-essential`, `wget`, `curl`, etc. Also checks if a compatible NVIDIA GPU is present on the system and if the correct NVIDIA driver is installed. It will also check if the Nouveau driver is currently being used. If the nouveau driver is active, the script will stop and prompt the user to disable it. This Option is useful as a quick check prior to installing other (or all) components.
+**Option 1:** Installs missing system packages like `build-essential`, `wget`, `curl`, etc. Also checks if a compatible NVIDIA GPU is present on the system and if the correct NVIDIA driver is installed. It will also check if the Nouveau driver is currently being used. If the nouveau driver is active, the script will stop and prompt the user to disable it. Checks whether PixInsight is installed. This Option is useful as a quick check prior to installing other (or all) components.
 
 **Option 2:** Installs only the CUDA Toolkit.
 
@@ -81,9 +82,11 @@ Upon running, you will be presented with the following options in an interactive
 
 **Option 5:** Installs all components: CUDA, cuDNN and TensorFlow (see **Note 1** below).
 
-**Option 6:** Verifies the installation of CUDA, cuDNN and TensorFlow.
+**Option 6** Updates TensorFlow file locations following re-installation of PixInsight 
 
-**Option 7:** Exits the script without making changes.
+**Option 7:** Verifies the installation of CUDA, cuDNN and TensorFlow.
+
+**Option 8:** Exits the script without making changes.
 
 ### Step 4: After Installation
 
