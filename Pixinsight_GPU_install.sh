@@ -116,6 +116,8 @@ verify_pixinsight_installation() {
     if [ ! -d "$PIXI_DIR" ]; then
         echo "❌ ERROR: PixInsight directory not found at $PIXI_DIR."
         return 1
+    else
+        echo"PixInsight directory found at $PIXI_DIR."
     fi
 
     # Check for main executable
@@ -124,6 +126,8 @@ verify_pixinsight_installation() {
         echo "❌ ERROR: PixInsight executable not found or not executable at $PIXI_BIN."
         echo "    Ensure that PixInsight is installed correctly and permissions are set."
         return 1
+    else
+        echo"PixInsight executable found at $PIXI_BIN."
     fi
 
     # Try to run a harmless command to confirm it starts
@@ -356,12 +360,12 @@ install_tensorflow() {
     fi
 
     echo "🔧 Updating PixInsight TensorFlow libraries..."
-    if [ -d /opt/PixInsight/bin/lib ]; then
+    if verify_pixinsight_installation; then
         sudo mkdir -p /opt/PixInsight/bin/lib/backup_tf
         sudo mv /opt/PixInsight/bin/lib/libtensorflow* /opt/PixInsight/bin/lib/backup_tf/ 2>/dev/null || true
         echo "✅ Old TensorFlow libraries backed up to /opt/PixInsight/bin/lib/backup_tf."
     else
-        echo "⚠️ WARNING: /opt/PixInsight/bin/lib not found. PixInsight may not be installed yet!"
+        echo "⚠️ WARNING: PixInsight may not be installed yet!"
     fi
     source ~/.bashrc
 
@@ -371,13 +375,13 @@ install_tensorflow() {
 # Update PixInsight’s TensorFlow libraries after PixInsight update
 update_pxi_tf() {
     echo "🔧 Updating PixInsight TensorFlow libraries..."
-    if [ -d /opt/PixInsight/bin/lib ]; then
+    if verify_pixinsight_installation; then
         sudo mkdir -p /opt/PixInsight/bin/lib/backup_tf
         sudo mv /opt/PixInsight/bin/lib/libtensorflow* /opt/PixInsight/bin/lib/backup_tf/ 2>/dev/null || true
         sudo cp /usr/local/lib/libtensorflow* /opt/PixInsight/bin/lib/
         echo "✅ PixInsight TensorFlow libraries updated."
     else
-        echo "⚠️  PixInsight not found at /opt/PixInsight. Cannot update."
+        echo "❌  PixInsight not found at /opt/PixInsight. Cannot update."
         return 1
     fi
 }
@@ -402,6 +406,7 @@ case $choice in
 	check_nvidia_gpu
 	check_prerequisites
         check_nvidia_driver
+        verify_pixinsight_installation
 	;;
     2)
         check_nvidia_gpu
@@ -419,12 +424,14 @@ case $choice in
         check_nvidia_gpu
         check_prerequisites
         check_nvidia_driver
+        verify_pixinsight_installation
         install_tensorflow
         ;;
     5)
         check_nvidia_gpu
         check_prerequisites
         check_nvidia_driver
+        verify_pixinsight_installation
         install_cuda
         install_cudnn
         install_tensorflow
@@ -432,6 +439,7 @@ case $choice in
     6)
         check_tensorflow_installed
         verify_tensorflow_installation
+        verify_pixinsight_installation
         update_pxi_tf	
         ;;
     7)
