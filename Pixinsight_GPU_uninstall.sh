@@ -1,4 +1,3 @@
-```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -23,26 +22,80 @@ fi
 # === Uninstall Functions ===
 uninstall_cuda() {
   info "Purging CUDA..."
-  apt-get --purge remove -y "*cuda*" "*cublas*" "*nvcc*"
-  rm -rf "/usr/local/cuda-${CUDA_SHORT}"
+  apt purge -y "*cuda*" "*cublas*" "*nvcc*"
+
+  CUDA_DIR="/usr/local/cuda-${CUDA_SHORT}"
+  if [ -d "$CUDA_DIR" ]; then
+    read -p "Do you really want to delete the directory '$CUDA_DIR'? [y/N]: " confirm
+    case "$confirm" in
+      [yY][eE][sS]|[yY])
+        rm -rf "$CUDA_DIR"
+        info "Deleted directory $CUDA_DIR"
+        ;;
+      *)
+        info "Skipped deletion of $CUDA_DIR"
+        ;;
+    esac
+  else
+    info "Directory $CUDA_DIR does not exist."
+  fi
+
   ldconfig
   success "CUDA removed."
 }
 
 uninstall_cudnn() {
   info "Removing cuDNN..."
+  
+  # Remove cuDNN packages
   for pkg in $(dpkg -l | grep -i cudnn | awk '{print $2}'); do
     apt-get --purge remove -y "$pkg"
   done
-  rm -f "/usr/local/cuda-${CUDA_SHORT}/include/cudnn.h" "/usr/local/cuda-${CUDA_SHORT}/lib64/libcudnn*"
+
+  # Paths to cuDNN files
+  CUDNN_HEADER="/usr/local/cuda-${CUDA_SHORT}/include/cudnn.h"
+  CUDNN_LIBS="/usr/local/cuda-${CUDA_SHORT}/lib64/libcudnn*"
+
+  # Confirm deletion
+  echo "The following cuDNN files will be deleted:"
+  echo "  $CUDNN_HEADER"
+  echo "  $CUDNN_LIBS"
+  read -p "Do you really want to delete these files? [y/N]: " confirm
+  case "$confirm" in
+    [yY][eE][sS]|[yY])
+      rm -f $CUDNN_HEADER $CUDNN_LIBS
+      info "cuDNN files deleted."
+      ;;
+    *)
+      info "Skipped deletion of cuDNN files."
+      ;;
+  esac
+
   ldconfig
   success "cuDNN removed."
 }
 
 uninstall_tensorflow() {
   info "Removing TensorFlow C API..."
-  rm -f /usr/local/lib/libtensorflow.so* 
-  rm -rf /usr/local/include/tensorflow
+
+  TENSORFLOW_LIB="/usr/local/lib/libtensorflow.so*"
+  TENSORFLOW_INCLUDE_DIR="/usr/local/include/tensorflow"
+
+  echo "The following TensorFlow files/directories will be deleted:"
+  echo "  $TENSORFLOW_LIB"
+  echo "  $TENSORFLOW_INCLUDE_DIR"
+  read -p "Do you really want to delete these files? [y/N]: " confirm
+  case "$confirm" in
+    [yY][eE][sS]|[yY])
+      rm -f $TENSORFLOW_LIB
+      rm -rf $TENSORFLOW_INCLUDE_DIR
+      info "TensorFlow files deleted."
+      ;;
+    *)
+      info "Skipped deletion of TensorFlow files."
+      ;;
+  esac
+
   ldconfig
   success "TensorFlow removed."
 }
@@ -69,8 +122,6 @@ cleanup_pixinsight_tf() {
     done
     success "Restored ${#files[@]} TensorFlow library files to $libdir"
   fi
-  # Optionally remove backup directory if empty
-  rmdir --ignore-fail-on-non-empty "$backup" 2>/dev/null || true
 }
 
 # === Menu ===
@@ -94,5 +145,4 @@ select opt in "${options[@]}"; do
     *) warn "Invalid selection." ;; 
   esac
 done
-```
 
