@@ -302,25 +302,21 @@ install_cudnn() {
 
     echo "🔧 Installing cuDNN ${CUDNN_VERSION} for CUDA ${CUDA_SHORT}..."
 
-    # look for a downloaded cuDNN archive in DOWNLOAD_DIR
-    local default_tar="${DOWNLOAD_DIR}/cudnn-linux-x86_64-${CUDNN_VERSION}_cuda${CUDA_SHORT/.8/}-archive.tar.xz"
-    if [[ -f "$default_tar" ]]; then
-        echo "📦 Found cuDNN archive tar file in ~/Downloads: $default_tar"
-        cudnn_tar="$default_tar"
-    else
-        echo "⚠️ cuDNN archive tar file not found in ${DOWNLOAD_DIR}."
-        echo "👉 Please download cuDNN ${CUDNN_VERSION} for CUDA ${CUDA_SHORT} from NVIDIA cuDNN Archive"
-        read -rp "📦 Enter FULL PATH to downloaded cuDNN tar file: " cudnn_tar
-    fi
+    # Prompt user to enter full path to cuDNN archive
+    read -rp "📦 Enter FULL PATH (including file name) to downloaded cuDNN .tar.xz file: " cudnn_tar
 
     if [[ ! -f "$cudnn_tar" ]]; then
         echo "❌ ERROR: cuDNN archive tar file not found at $cudnn_tar!"
         exit 1
     fi
 
-    tar -xvf "$cudnn_tar" -C "$DOWNLOAD_DIR/"
-    # assume extraction creates a cuda directory
-    cd "${DOWNLOAD_DIR}/cudnn-linux-x86_64-${CUDNN_VERSION}_cuda${CUDA_SHORT/.8/}-archive" || exit 1
+    # Extract in the same directory as the archive
+    cudnn_dir=$(dirname "$cudnn_tar")
+    tar -xvf "$cudnn_tar" -C "$cudnn_dir"
+
+    # Assume directory name follows NVIDIA pattern
+    archive_dir_name="cudnn-linux-x86_64-${CUDNN_VERSION}_cuda${CUDA_SHORT/.8/}-archive"
+    cd "${cudnn_dir}/${archive_dir_name}" || { echo "❌ ERROR: Failed to cd into extracted cuDNN directory"; exit 1; }
 
     if [[ ! -d "include" || ! -d "lib64" ]]; then
         echo "❌ ERROR: cuDNN archive did not extract correctly"
