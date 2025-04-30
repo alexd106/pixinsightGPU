@@ -8,15 +8,9 @@ TENSORFLOW_VERSION="2.13.0"
 PIXINSIGHT_DIR="/opt/PixInsight"
 USER_HOME=$(getent passwd "${SUDO_USER:-$(logname)}" | cut -d: -f6)
 
-# === Helpers ===
-info()    { echo -e "[INFO]    $*"; }
-success() { echo -e "[SUCCESS] $*"; }
-warn()    { echo -e "[WARN]    $*"; }
-error()   { echo -e "[ERROR]   $*"; exit 1; }
-
 # Ensure root
 if [[ $EUID -ne 0 ]]; then
-  info "Re-running with sudo..."
+  echo "Re-running with sudo..."
   exec sudo "$0" "$@"
 fi
 
@@ -232,7 +226,7 @@ select opt in "${options[@]}"; do
     4) uninstall_cuda; uninstall_cudnn; uninstall_tensorflow ;; 
     5) cleanup_pixinsight_tf ;; 
     6) break ;; 
-    *) warn "Invalid selection." ;; 
+    *) echo "Invalid selection." ;; 
   esac
 done
 
