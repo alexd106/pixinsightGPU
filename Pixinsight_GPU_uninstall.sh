@@ -38,6 +38,15 @@ check_cudnn_installed() {
         return 1
     fi
 }
+
+check_tensorflow_installed() {
+    if [ -f "/usr/local/lib/libtensorflow.so.${TENSORFLOW_VERSION}" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # === Uninstall Functions ===
 uninstall_cuda() {
     # Detect CUDA
@@ -148,6 +157,11 @@ uninstall_cudnn() {
 }
 
 uninstall_tensorflow() {
+  if ! check_tensorflow_installed; then
+    echo "⚠️  No TensorFlow installation detected. Nothing to do."
+    return 0
+  fi
+
   echo "Removing TensorFlow C API..."
 
   TENSORFLOW_LIB="/usr/local/lib/libtensorflow.so*"
