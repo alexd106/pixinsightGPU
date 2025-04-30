@@ -38,16 +38,16 @@ while true; do
 done
 
 # === DEPENDENCY CHECK ===
-check_dependencies() {
-  local cmd
-  for cmd in apt sed grep ldconfig getent tput; do
-    if ! command -v "$cmd" &>/dev/null; then
-      log_error "Required command '$cmd' not found."
-      exit 2
-    fi
-  done
-}
-check_dependencies
+#check_dependencies() {
+#  local cmd
+#  for cmd in apt sed grep ldconfig getent tput; do
+#    if ! command -v "$cmd" &>/dev/null; then
+#      log_error "Required command '$cmd' not found."
+#      exit 2
+#    fi
+#  done
+#}
+#check_dependencies
 
 # === SAFE PROMPTS & EXECUTION ===
 confirm() {
