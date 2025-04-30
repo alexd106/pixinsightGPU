@@ -282,11 +282,11 @@ install_cuda() {
     fi
 
     echo "🔧 Configuring environment variables..."
-    if ! grep -q "cuda-${CUDA_SHORT}" ~/.bashrc; then
-        echo "export PATH=/usr/local/cuda-${CUDA_SHORT}/bin:\$PATH" >> ~/.bashrc
-        echo "export LD_LIBRARY_PATH=/usr/local/cuda-${CUDA_SHORT}/lib64:\$LD_LIBRARY_PATH" >> ~/.bashrc
+    if ! grep -q "cuda-${CUDA_SHORT}" $USER_HOME/.bashrc; then
+        echo "export PATH=/usr/local/cuda-${CUDA_SHORT}/bin:\$PATH" >> $USER_HOME/.bashrc
+        echo "export LD_LIBRARY_PATH=/usr/local/cuda-${CUDA_SHORT}/lib64:\$LD_LIBRARY_PATH" >> $USER_HOME/.bashrc
     fi
-    source ~/.bashrc
+    source $USER_HOME/.bashrc
 
     echo "/usr/local/cuda-${CUDA_SHORT}/lib64" | sudo tee /etc/ld.so.conf.d/cuda-${CUDA_SHORT}.conf
     sudo ldconfig   
@@ -320,7 +320,7 @@ install_cudnn() {
 
     tar -xvf "$cudnn_tar" -C "$DOWNLOAD_DIR/"
     # assume extraction creates a cuda directory
-    cd "$DOWNLOAD_DIR/cuda" || exit 1
+    cd "${DOWNLOAD_DIR}/cudnn-linux-x86_64-${CUDNN_VERSION}_cuda${CUDA_SHORT/.8/}-archive" || exit 1
 
     if [[ ! -d "include" || ! -d "lib64" ]]; then
         echo "❌ ERROR: cuDNN archive did not extract correctly"
