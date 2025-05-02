@@ -24,6 +24,11 @@ EOF
   exit 0
 }
 
+# require root
+if [[ $EUID -ne 0 ]]; then
+  exec sudo "$0" "$@"
+fi
+
 # === PARSE ARGS ===
 dry_run=false
 TEMP_OPTS=$(getopt -o dh --long dry-run,help -n "$0" -- "$@") || usage
@@ -77,10 +82,6 @@ readonly TENSORFLOW_VERSION="2.13.0"
 readonly PIXINSIGHT_LAUNCHER="/opt/PixInsight/bin/PixInsight.sh"
 USER_HOME=$(getent passwd "${SUDO_USER:-$(logname)}" | cut -d: -f6)
 
-# require root
-if [[ $EUID -ne 0 ]]; then
-  exec sudo "$0" "$@"
-fi
 
 # build apt options
 declare -a APT_OPTS
@@ -132,7 +133,8 @@ uninstall_cudnn() {
     log_info "cuDNN uninstall aborted"
     return
   }
-  local inc="/usr/local/cuda-${CUDA_SHORT}/include" lib="/usr/local/cuda-${CUDA_SHORT}/lib64"
+  local inc="/usr/local/cuda-${CUDA_SHORT}/include" 
+  local lib="/usr/local/cuda-${CUDA_SHORT}/lib64"
   if compgen -G "$inc"/cudnn*.h >/dev/null || compgen -G "$lib"/libcudnn* >/dev/null; then
     run_cmd sudo rm -f "$inc"/cudnn*.h "$lib"/libcudnn*
   else
@@ -179,13 +181,15 @@ cleanup_pixinsight_tf() {
     log_info "PixInsight restore skipped"
     return
   }
-  local libdir="/opt/PixInsight/bin/lib" backup="$libdir/backup_tf"
+  local libdir="/opt/PixInsight/bin/lib" 
+  local backup="$libdir/backup_tf"
   if [[ -d $backup ]]; then
     run_cmd bash -c "shopt -s nullglob; for f in \"$backup\"/libtensorflow*.so*; do mv -f \"\$f\" \"$libdir/\"; done"
+    log_info "PixInsight restore complete"
   else
     log_warn "Backup dir $backup not found."
+    log_info "PixInsight restore not complete"
   fi
-  log_info "PixInsight restore complete"
 }
 
 # === MENU ===
@@ -200,12 +204,20 @@ options=(
 )
 select opt in "${options[@]}"; do
   case $REPLY in
-    1) uninstall_cuda ;;
-    2) uninstall_cudnn ;;
-    3) uninstall_tensorflow ;;
-    4) uninstall_cuda; uninstall_cudnn; uninstall_tensorflow ;;
-    5) cleanup_pixinsight_tf ;;
-    6) break ;;
-    *) echo "Invalid selection." ;;
+    1) uninstall_cuda
+       ;;
+    2) uninstall_cudnn
+       ;;
+    3) uninstall_tensorflow
+       ;;
+    4) uninstall_cuda; uninstall_cudnn; uninstall_tensorflow
+       ;;
+    5) cleanup_pixinsight_tf
+       ;;
+    6) echo "Exiting."
+       break
+       ;;
+    *) echo "Invalid selection."
+       ;;
   esac
 done
