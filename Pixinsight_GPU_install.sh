@@ -243,7 +243,7 @@ verify_tensorflow_installation() {
         	all_ok=false
     	fi
     	if $all_ok; then
-	       	echo "🎯 Tensorflow appears to be installed correctly for PixInsight"
+	       	echo "✅ Tensorflow appears to be installed correctly for PixInsight"
 	       	echo ""
 		fi
 	fi
@@ -477,7 +477,7 @@ while true; do
         	;;
     	*)
         	echo "❌ Invalid choice."
-        exit 1
+            exit 1
         	;;
 	esac
 done
