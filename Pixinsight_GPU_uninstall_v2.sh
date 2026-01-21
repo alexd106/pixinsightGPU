@@ -2,6 +2,15 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# ==============================================================================
+# Uninstall / rollback script aligned with the UPDATED installer script
+# - Uses the same CUDA_SHORT / ld.so.conf.d filename convention
+# - Uses the same bashrc marker block for clean, idempotent removal
+# - Detects correct CUDA libdir (targets/.../lib vs lib64)
+# - Removes ONLY the items this workflow likely created (avoids collateral damage)
+# - Supports --dry-run
+# ==============================================================================
+
 # === COLOR SETUP ===
 if tput colors &>/dev/null && [ "$(tput colors)" -ge 8 ]; then
   RED="\033[31m"; YELLOW="\033[33m"; GREEN="\033[32m"; NC="\033[0m"
@@ -10,9 +19,9 @@ else
 fi
 
 # === LOGGING FUNCTIONS ===
-log_info()  { printf "${GREEN}[INFO] %s${NC}\n" "$*"; }
-log_warn()  { printf "${YELLOW}[WARN] %s${NC}\n" "$*"; }
-log_error() { printf "${RED}[ERROR] %s${NC}\n" "$*" >&2; }
+log_info()  { printf "%b[INFO] %s%b\n"  "${GREEN}" "$*" "${NC}"; }
+log_warn()  { printf "%b[WARN] %s%b\n"  "${YELLOW}" "$*" "${NC}"; }
+log_error() { printf "%b[ERROR] %s%b\n" "${RED}" "$*" "${NC}" >&2; }
 
 # === USAGE ===
 usage() {
@@ -24,41 +33,30 @@ EOF
   exit 0
 }
 
-# require root
-if [[ $EUID -ne 0 ]]; then
-  exec sudo "$0" "$@"
-fi
-
-# === PARSE ARGS ===
+# === PARSE ARGS (before privilege escalation so we preserve flags) ===
 dry_run=false
+orig_args=("$@")
 TEMP_OPTS=$(getopt -o dh --long dry-run,help -n "$0" -- "$@") || usage
 eval set -- "$TEMP_OPTS"
 while true; do
-  case "$1" in
+  case "${1:-}" in
     -d|--dry-run) dry_run=true; shift ;;
-    -h|--help)    usage        ;;
+    -h|--help)    usage ;;
     --) shift; break ;;
     *) usage ;;
   esac
 done
 
-# === DEPENDENCY CHECK ===
-#check_dependencies() {
-#  local cmd
-#  for cmd in apt sed grep ldconfig getent tput; do
-#    if ! command -v "$cmd" &>/dev/null; then
-#      log_error "Required command '$cmd' not found."
-#      exit 2
-#    fi
-#  done
-#}
-#check_dependencies
+# require root, re-exec preserving original args
+if [[ ${EUID:-0} -ne 0 ]]; then
+  exec sudo "$0" "${orig_args[@]}"
+fi
 
 # === SAFE PROMPTS & EXECUTION ===
 confirm() {
   local prompt="${1:-Are you sure?}" ans
   while true; do
-    read -rp "🗑️  $prompt [y/N]: " ans
+    read -rp "$prompt [y/N]: " ans
     case "$ans" in
       [Yy]|[Yy][Ee][Ss]) return 0 ;;
       [Nn]|"")           return 1 ;;
@@ -66,6 +64,7 @@ confirm() {
     esac
   done
 }
+
 run_cmd() {
   if $dry_run; then
     log_info "[DRY-RUN] $*"
@@ -75,121 +74,227 @@ run_cmd() {
   fi
 }
 
-# === CONFIGURATION ===
+# === CONFIGURATION (aligned with the UPDATED installer) ===
 readonly CUDA_SHORT="11.8"
 readonly CUDNN_VERSION="8.9.4.25"
-readonly TENSORFLOW_VERSION="2.13.0"
+readonly TENSORFLOW_VERSION="2.14.0"
+readonly PIXINSIGHT_DIR="/opt/PixInsight"
 readonly PIXINSIGHT_LAUNCHER="/opt/PixInsight/bin/PixInsight.sh"
-USER_HOME=$(getent passwd "${SUDO_USER:-$(logname)}" | cut -d: -f6)
 
+readonly USER_HOME="$(getent passwd "${SUDO_USER:-$(logname)}" | cut -d: -f6)"
+readonly CUDA_LDSO_CONF="/etc/ld.so.conf.d/cuda-${CUDA_SHORT/./-}.conf"
 
-# build apt options
+# Same bashrc markers as the updated installer
+readonly BASHRC_MARK_BEGIN="# >>> PIXINSIGHT_GPU_SETUP BEGIN >>>"
+readonly BASHRC_MARK_END="# <<< PIXINSIGHT_GPU_SETUP END <<<"
+
+# === APT OPTIONS ===
 declare -a APT_OPTS
 $dry_run && APT_OPTS+=(--simulate)
 APT_OPTS+=(purge -y)
 
+# === PATH DETECTION HELPERS (same logic as installer) ===
+cuda_root() {
+  printf "/usr/local/cuda-%s" "$CUDA_SHORT"
+}
+
+cuda_libdir() {
+  local root; root="$(cuda_root)"
+  if [[ -d "$root/targets/x86_64-linux/lib" ]]; then
+    printf "%s\n" "$root/targets/x86_64-linux/lib"
+  elif [[ -d "$root/lib64" ]]; then
+    printf "%s\n" "$root/lib64"
+  elif [[ -d "$root/lib" ]]; then
+    printf "%s\n" "$root/lib"
+  else
+    # default to expected targets path
+    printf "%s\n" "$root/targets/x86_64-linux/lib"
+  fi
+}
+
 # === CHECK FUNCTIONS ===
-check_cuda_installed()   { [[ -d "/usr/local/cuda-${CUDA_SHORT}" ]]; }
-check_cudnn_installed()  { [[ -f "/usr/local/cuda-${CUDA_SHORT}/include/cudnn.h" ]]; }
-check_tf_installed()     { compgen -G "/usr/local/lib/libtensorflow.so.${TENSORFLOW_VERSION}*" >/dev/null; }
-check_pixinsight_installed() { [[ -x "$PIXINSIGHT_LAUNCHER" ]]; }
+check_cuda_installed() {
+  [[ -d "$(cuda_root)" ]]
+}
+
+check_cudnn_installed() {
+  local root; root="$(cuda_root)"
+  local libdir; libdir="$(cuda_libdir)"
+  [[ -f "$root/include/cudnn.h" ]] || [[ -e "$libdir/libcudnn.so" ]] || [[ -e "$libdir/libcudnn.so.8" ]]
+}
+
+check_tf_installed() {
+  compgen -G "/usr/local/lib/libtensorflow.so*" >/dev/null
+}
+
+check_pixinsight_installed() {
+  [[ -x "$PIXINSIGHT_LAUNCHER" ]]
+}
+
+# === BASHRC CLEANUP ===
+remove_bashrc_block() {
+  local bashrc="$USER_HOME/.bashrc"
+  if [[ ! -f "$bashrc" ]]; then
+    log_warn "No $bashrc found; skipping bashrc cleanup."
+    return 0
+  fi
+
+  if grep -Fq "$BASHRC_MARK_BEGIN" "$bashrc"; then
+    log_info "Removing GPU environment block from $bashrc"
+    # delete inclusive range between markers
+    run_cmd sed -i "\#${BASHRC_MARK_BEGIN}#,\#${BASHRC_MARK_END}#d" "$bashrc"
+  else
+    log_info "No marker-based GPU block found in $bashrc"
+  fi
+}
 
 # === UNINSTALL FUNCTIONS ===
 uninstall_cuda() {
-  local dir="/usr/local/cuda-${CUDA_SHORT}"
+  local root; root="$(cuda_root)"
   if ! check_cuda_installed; then
-    log_warn "No CUDA at $dir. Nothing to do!"
-    return
+    log_warn "No CUDA found at $root. Nothing to do."
+    return 0
   fi
-  confirm "Uninstall CUDA?" || {
+
+  confirm "Uninstall CUDA toolkit at $root and remove $CUDA_LDSO_CONF?" || {
     log_info "CUDA uninstall aborted"
-    return
+    return 0
   }
-  [[ -x "$dir/bin/cuda-uninstaller" ]] && run_cmd sudo "$dir/bin/cuda-uninstaller" --silent
-  run_cmd sudo apt "${APT_OPTS[@]}" cuda* cublas*
-  run_cmd sudo apt "${APT_OPTS[@]}" autoremove
-  run_cmd sudo apt "${APT_OPTS[@]}" autoclean
-  if compgen -G "/usr/local/cuda*" >/dev/null; then
-    run_cmd sudo rm -rf /usr/local/cuda*
+
+  # Attempt vendor uninstaller if present
+  if [[ -x "$root/bin/cuda-uninstaller" ]]; then
+    run_cmd "$root/bin/cuda-uninstaller" --silent || true
+  fi
+
+  # Remove ld.so.conf.d entry created/used by this workflow
+  if [[ -f "$CUDA_LDSO_CONF" ]]; then
+    run_cmd rm -f "$CUDA_LDSO_CONF"
   else
-    log_info "No /usr/local/cuda* to remove."
+    log_info "No $CUDA_LDSO_CONF found; skipping."
   fi
-  if grep -q '/usr/local/cuda' "$USER_HOME/.bashrc"; then
-    run_cmd sed -i '\#/usr/local/cuda#d' "$USER_HOME/.bashrc"
+
+  # Remove CUDA trees
+  if [[ -L /usr/local/cuda ]]; then
+    local tgt
+    tgt="$(readlink -f /usr/local/cuda || true)"
+    if [[ "$tgt" == "$root" ]]; then
+      run_cmd rm -f /usr/local/cuda
+    else
+      log_info "/usr/local/cuda points elsewhere ($tgt); leaving intact."
+    fi
   fi
-  if compgen -G "/etc/ld.so.conf.d/cuda-*.conf" >/dev/null; then
-    run_cmd sudo rm -f /etc/ld.so.conf.d/cuda-*.conf
-  fi
-  run_cmd sudo ldconfig
-  log_info "CUDA removal complete"
+
+  # Remove versioned CUDA directory
+  run_cmd rm -rf "$root"
+
+  # Optional apt cleanup - may do nothing for .run installs
+  run_cmd apt "${APT_OPTS[@]}" 'cuda*' 'libcublas*' 'libnpp*' 'libnvrtc*' || true
+  run_cmd apt "${APT_OPTS[@]}" autoremove || true
+  run_cmd apt "${APT_OPTS[@]}" autoclean || true
+
+  remove_bashrc_block
+
+  run_cmd ldconfig
+  log_info "CUDA removal complete."
 }
 
 uninstall_cudnn() {
   if ! check_cudnn_installed && ! ldconfig -p | grep -q libcudnn; then
     log_warn "No cuDNN detected."
-    return
+    return 0
   fi
-  confirm "Uninstall cuDNN?" || {
+
+  local root; root="$(cuda_root)"
+  local libdir; libdir="$(cuda_libdir)"
+  local inc="$root/include"
+
+  confirm "Uninstall cuDNN from $inc and $libdir?" || {
     log_info "cuDNN uninstall aborted"
-    return
+    return 0
   }
-  local inc="/usr/local/cuda-${CUDA_SHORT}/include" 
-  local lib="/usr/local/cuda-${CUDA_SHORT}/lib64"
-  if compgen -G "$inc"/cudnn*.h >/dev/null || compgen -G "$lib"/libcudnn* >/dev/null; then
-    run_cmd sudo rm -f "$inc"/cudnn*.h "$lib"/libcudnn*
+
+  # Remove headers
+  if compgen -G "$inc"/cudnn*.h >/dev/null; then
+    run_cmd rm -f "$inc"/cudnn*.h
   else
-    log_info "No cuDNN files to remove."
+    log_info "No cuDNN headers found under $inc"
   fi
-  run_cmd sudo apt "${APT_OPTS[@]}" cudnn*
-  run_cmd sudo apt "${APT_OPTS[@]}" autoremove
-  run_cmd sudo apt "${APT_OPTS[@]}" autoclean
-  if grep -q cudnn "$USER_HOME/.bashrc"; then
-    run_cmd sed -i '/cudnn/d' "$USER_HOME/.bashrc"
+
+  # Remove libraries (both symlinks and versioned files) from detected libdir
+  if compgen -G "$libdir"/libcudnn* >/dev/null; then
+    run_cmd rm -f "$libdir"/libcudnn*
+  else
+    log_info "No cuDNN libraries found under $libdir"
   fi
-  if compgen -G "/etc/ld.so.conf.d/*cudnn*.conf" >/dev/null; then
-    run_cmd sudo rm -f /etc/ld.so.conf.d/*cudnn*.conf
+
+  # Optinally remove created backup-so8-* dirs if created
+  if compgen -G "$libdir"/backup-so8-* >/dev/null; then
+    if confirm "Remove cuDNN backup directories (backup-so8-*) under $libdir?"; then
+      run_cmd rm -rf "$libdir"/backup-so8-*
+    else
+      log_info "Leaving backup-so8-* directories in place."
+    fi
   fi
-  run_cmd sudo ldconfig
-  log_info "cuDNN removal complete"
+
+  # Optional apt cleanup (may do nothing for tar installs)
+  run_cmd apt "${APT_OPTS[@]}" 'cudnn*' 'libcudnn*' || true
+  run_cmd apt "${APT_OPTS[@]}" autoremove || true
+  run_cmd apt "${APT_OPTS[@]}" autoclean || true
+
+  run_cmd ldconfig
+  log_info "cuDNN removal complete."
 }
 
 uninstall_tensorflow() {
   if ! check_tf_installed; then
-    log_warn "No TensorFlow C API detected."
-    return
+    log_warn "No TensorFlow C API detected in /usr/local/lib."
+    return 0
   fi
-  confirm "Delete TensorFlow C API files?" || {
+
+  confirm "Delete TensorFlow C API files from /usr/local (include + libtensorflow.so*)?" || {
     log_info "TensorFlow uninstall skipped"
-    return
+    return 0
   }
+
   if compgen -G "/usr/local/lib/libtensorflow.so*" >/dev/null; then
-    run_cmd sudo rm -f /usr/local/lib/libtensorflow.so*
+    run_cmd rm -f /usr/local/lib/libtensorflow.so*
   else
-    log_info "No TF libs to remove."
+    log_info "No TensorFlow shared libs to remove."
   fi
-  [[ -d /usr/local/include/tensorflow ]] && run_cmd sudo rm -rf /usr/local/include/tensorflow
-  run_cmd sudo ldconfig
-  log_info "TensorFlow removal complete"
+
+  # Remove headers if present (TF C API typically installs tensorflow/ under include)
+  if [[ -d /usr/local/include/tensorflow ]]; then
+    run_cmd rm -rf /usr/local/include/tensorflow
+  else
+    log_info "No /usr/local/include/tensorflow directory found."
+  fi
+
+  run_cmd ldconfig
+  log_info "TensorFlow removal complete."
 }
 
-cleanup_pixinsight_tf() {
+restore_pixinsight_tf_libs() {
+ # only useful if previously backed up.
   if ! check_pixinsight_installed; then
     log_warn "PixInsight not found. Skipping restore."
-    return
+    return 0
   fi
-  confirm "Restore PixInsight TensorFlow libs?" || {
-    log_info "PixInsight restore skipped"
-    return
-  }
-  local libdir="/opt/PixInsight/bin/lib" 
+
+  local libdir="$PIXINSIGHT_DIR/bin/lib"
   local backup="$libdir/backup_tf"
-  if [[ -d $backup ]]; then
-    run_cmd bash -c "shopt -s nullglob; for f in \"$backup\"/libtensorflow*.so*; do mv -f \"\$f\" \"$libdir/\"; done"
-    log_info "PixInsight restore complete"
-  else
-    log_warn "Backup dir $backup not found."
-    log_info "PixInsight restore not complete"
+
+  if [[ ! -d "$backup" ]]; then
+    log_warn "Backup dir $backup not found; nothing to restore."
+    return 0
   fi
+
+  confirm "Restore PixInsight TensorFlow libs from $backup back into $libdir?" || {
+    log_info "PixInsight restore skipped"
+    return 0
+  }
+
+  run_cmd bash -c "shopt -s nullglob; for f in \"$backup\"/libtensorflow*.so*; do mv -f \"\$f\" \"$libdir/\"; done"
+  log_info "PixInsight TensorFlow restore complete."
 }
 
 # === MENU ===
@@ -197,27 +302,22 @@ PS3="Select action: "
 options=(
   "Uninstall CUDA"
   "Uninstall cuDNN"
-  "Uninstall TensorFlow"
-  "Uninstall All"
-  "Restore PixInsight TF libs"
+  "Uninstall TensorFlow C API"
+  "Uninstall All (CUDA + cuDNN + TF)"
+  "Remove bashrc GPU block only"
+  "Restore PixInsight TF libs (if backup exists)"
   "Quit"
 )
+
 select opt in "${options[@]}"; do
   case $REPLY in
-    1) uninstall_cuda
-       ;;
-    2) uninstall_cudnn
-       ;;
-    3) uninstall_tensorflow
-       ;;
-    4) uninstall_cuda; uninstall_cudnn; uninstall_tensorflow
-       ;;
-    5) cleanup_pixinsight_tf
-       ;;
-    6) echo "Exiting."
-       break
-       ;;
-    *) echo "Invalid selection."
-       ;;
+    1) uninstall_cuda ;;
+    2) uninstall_cudnn ;;
+    3) uninstall_tensorflow ;;
+    4) uninstall_cuda; uninstall_cudnn; uninstall_tensorflow ;;
+    5) remove_bashrc_block ;;
+    6) restore_pixinsight_tf_libs ;;
+    7) echo "Exiting."; break ;;
+    *) echo "Invalid selection." ;;
   esac
 done
