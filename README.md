@@ -38,7 +38,7 @@ Before running the script, ensure pre-requisites above are met.
 
 ### Step 1: Run the Script
 1. **Download the Script**  
-Save the script to a file, for example, `Pixinsight_GPU_install.sh` in a location of your choice (i.e. `~/PixInsight/`). If you want to run the uninstall script instead ([see below](uninstaller-script)) then do the same for `Pixinsight_GPU_uninstall.sh`.
+Save the script to a file, for example, `Pixinsight_GPU_install.sh` in a location of your choice (i.e. `~/PixInsight/`). If you want to run the uninstall script instead ([see below](#uninstaller-script)) then do the same for `Pixinsight_GPU_uninstall.sh`.
 
 2. **Make it executable**
 ```bash
