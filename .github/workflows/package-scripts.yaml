@@ -20,7 +20,7 @@ jobs:
 
       - name: Generate checksums
         run: |
-          sha256sum PixInsight_GPU_install.sh PixInsight_GPU_uninstall.sh > SHA256SUMS.txt
+          sha256sum Pixinsight_GPU_install.sh Pixinsight_GPU_uninstall.sh > SHA256SUMS.txt
 
       - name: Upload artifact (scripts + checksums)
         uses: actions/upload-artifact@v4
