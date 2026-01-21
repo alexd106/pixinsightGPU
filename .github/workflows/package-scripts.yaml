@@ -15,8 +15,8 @@ jobs:
 
       - name: Validate scripts exist
         run: |
-          test -f PixInsight_GPU_install.sh
-          test -f PixInsight_GPU_uninstall.sh
+          test -f Pixinsight_GPU_install.sh
+          test -f Pixinsight_GPU_uninstall.sh
 
       - name: Generate checksums
         run: |
@@ -27,8 +27,8 @@ jobs:
         with:
           name: PixInsight_GPU_latest
           path: |
-            PixInsight_GPU_install.sh
-            PixInsight_GPU_uninstall.sh
+            Pixinsight_GPU_install.sh
+            Pixinsight_GPU_uninstall.sh
             SHA256SUMS.txt
           if-no-files-found: error
 
