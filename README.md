@@ -38,7 +38,7 @@ Before running the script, ensure pre-requisites above are met.
 
 ### Step 1: Run the Script
 1. **Download the Script**  
-Save the script to a file, for example, `Pixinsight_GPU_install.sh` in a location of your choice (i.e. `~/PixInsight/`). If you want to run the uninstall script instead ([see below](#uninstaller-script)) then do the same for `Pixinsight_GPU_uninstall.sh`.
+Save the script to a file, for example, `Pixinsight_GPU_install.sh` in a location of your choice (i.e. `~/PixInsight/`). If you want to run the uninstall script instead ([see below](#uninstall-script)) then do the same for `Pixinsight_GPU_uninstall.sh`.
 
 2. **Make it executable**
 ```bash
@@ -112,7 +112,7 @@ source ~/.bashrc
 
 **TensorFlow C API installation errors:** Confirm the TensorFlow C API archive extracts successfully and that the contents of the extracted `include/` and `lib/` directories are copied into `/usr/local/include/` and `/usr/local/lib/` respectively, followed by `sudo ldconfig`.
 
-## Uninstaller Script
+## Uninstall Script
 
 The uninstaller script provides a controlled way to remove the GPU stack installed for PixInsight/StarXTerminator. It is aligned with the installer’s conventions (CUDA library path detection, `ld.so.conf.d` naming and the marker-based `.bashrc` block) to minimise collateral changes.
 
