@@ -443,7 +443,6 @@ install_tf() {
   log_info "=== TensorFlow INSTALL COMPLETE ==="
 }
 
-# === MENU DISPLAY FUNCTION ===
 show_menu() {
   echo
   echo "GPU Installer Menu"
@@ -452,12 +451,11 @@ show_menu() {
   echo "2) Install CUDA"
   echo "3) Install cuDNN"
   echo "4) Install TensorFlow C API"
-  echo "5) Verify installed components"
+  echo "5) Normalize cuDNN symlinks (fix ldconfig warnings)"
   echo "6) Install All"
-  echo "7) Normalize cuDNN symlinks (fix ldconfig warnings)"
+  echo "7) Verify installed components"
   echo "8) Quit"
 }
-
 show_menu
 
 # === MAIN LOOP ===
@@ -466,10 +464,7 @@ while true; do
   case "$choice" in
     1)
       log_info "-- Selected: Check GPU & prerequisites --"
-      check_nvidia_gpu
-      check_prerequisites
-      check_nvidia_driver
-      verify_pixinsight
+      check_nvidia_gpu; check_prerequisites; check_nvidia_driver; verify_pixinsight
       ;;
     2)
       log_info "-- Selected: Install CUDA --"
@@ -484,27 +479,19 @@ while true; do
       install_tf
       ;;
     5)
-      log_info "-- Selected: Verify installed components --"
-      verify_cuda_installation
-      verify_cudnn_installation
-      verify_tf_installation
-      verify_pixinsight
-      ;;
-    6)
-      log_info "-- Selected: Install All --"
-      check_nvidia_gpu
-      check_prerequisites
-      check_nvidia_driver
-      verify_pixinsight
-      install_cuda
-      install_cudnn
-      install_tf
-      ;;
-    7)
       log_info "-- Selected: Normalize cuDNN symlinks --"
       ensure_ldso_conf_for_cuda
       normalize_cudnn_symlinks
       run_cmd ldconfig
+      ;;
+    6)
+      log_info "-- Selected: Install All --"
+      check_nvidia_gpu; check_prerequisites; check_nvidia_driver; verify_pixinsight
+      install_cuda; install_cudnn; install_tf
+      ;;
+    7)
+      log_info "-- Selected: Verify installed components --"
+      verify_cuda_installation; verify_cudnn_installation; verify_tf_installation; verify_pixinsight
       ;;
     8)
       log_info "Exiting."

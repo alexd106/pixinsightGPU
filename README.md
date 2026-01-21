@@ -104,13 +104,44 @@ source ~/.bashrc
 
 ## Error Handling and Troubleshooting
 
-Missing NVIDIA GPU: If the system does not detect an NVIDIA GPU, ensure that your GPU is properly installed and recognised by the system.
+**Missing NVIDIA GPU:** If no NVIDIA GPU is detected, confirm the card is properly seated, enabled in BIOS and visible to the OS (e.g., via `lspci | grep -i nvidia`).
 
-Incompatible NVIDIA Driver: The script checks for the required driver version (currently 550). If an incompatible or missing driver is found, the script will exit with an error.
+**NVIDIA driver issues:** The script requires `nvidia-smi` and checks the installed driver against the recommended baseline (currently 550). If `nvidia-smi` is missing or the nouveau driver is active, the script will exit with an error. If the installed driver does not meet the baseline, the script will warn and prompt you to continue or abort.
 
-Missing cuDNN Files: If cuDNN is not extracted properly, verify that you downloaded the correct version of cuDNN and extracted it correctly.
+**Missing or mis-installed cuDNN:** Ensure you downloaded the correct cuDNN build for your CUDA version and extracted it to the expected CUDA path under `/usr/local/cuda-11.8/`. Depending on the CUDA layout, libraries may live in `targets/x86_64-linux/lib` or `lib64`. The installer normalises `libcudnn*.so.8` symlinks to avoid `ldconfig` warnings.
 
-TensorFlow Installation Errors: Ensure that the TensorFlow libraries are properly copied to `/usr/local/include/` and `/usr/local/lib/`.
+**TensorFlow C API installation errors:** Confirm the TensorFlow C API archive extracts successfully and that the contents of the extracted `include/` and `lib/` directories are copied into `/usr/local/include/` and `/usr/local/lib/` respectively, followed by `sudo ldconfig`.
+
+## Uninstaller Script
+
+The uninstaller script provides a controlled way to remove the GPU stack installed for PixInsight/StarXTerminator. It is aligned with the installer’s conventions (CUDA library path detection, `ld.so.conf.d` naming and the marker-based `.bashrc` block) to minimise collateral changes.
+
+### What it can remove
+
+- **TensorFlow C API**: Removes `libtensorflow.so*` from `/usr/local/lib/` and the TensorFlow headers under `/usr/local/include/tensorflow/`, then runs `ldconfig`.
+- **cuDNN**: Removes `cudnn*.h` headers under the CUDA include directory and `libcudnn*` libraries from the detected CUDA library directory (typically `targets/x86_64-linux/lib` or `lib64`), then runs `ldconfig`. It can also optionally remove any `backup-so8-*` directories created during symlink normalisation.
+- **CUDA toolkit (versioned)**: Removes `/usr/local/cuda-11.8/` (and only removes `/usr/local/cuda` if it points at that version), removes the version-specific dynamic linker config file (e.g. `/etc/ld.so.conf.d/cuda-11-8.conf`), optionally performs best-effort `apt` cleanup and runs `ldconfig`.
+- **`.bashrc` environment block**: Removes only the installer-added block delimited by the markers:
+  - `# >>> PIXINSIGHT_GPU_SETUP BEGIN >>>`
+  - `# <<< PIXINSIGHT_GPU_SETUP END <<<`
+
+### Uninstall order
+
+The **Uninstall All** option removes components in a dependency-safe order:
+
+1. TensorFlow C API  
+2. cuDNN  
+3. CUDA toolkit  
+
+### Dry-run mode
+
+For a safe preview, run the uninstaller with `--dry-run` (or `-d`). The script will print the commands it would execute without making changes:
+
+```bash
+./Pixinsight_GPU_uninstall.sh --dry-run
+# or
+./Pixinsight_GPU_uninstall.sh.sh -d
+```
 
 ## Additional Information
 
