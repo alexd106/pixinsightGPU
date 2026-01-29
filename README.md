@@ -72,7 +72,8 @@ Upon running, you will be presented with the following options in an interactive
 
 **Option 3:** Installs only cuDNN (see **Note 1** below).
 
-**Option 4:** Installs only TensorFlow C API and makes TensorFlow libraries available to PiXinsight.
+**Option 4:** Installs only TensorFlow C API and makes TensorFlow libraries available to PixInsight.
+As part of this step, any PixInsight-bundled `libtensorflow*` files in `/opt/PixInsight/bin/lib` are moved to `/opt/PixInsight/bin/lib/backup_tf/` so the system GPU TensorFlow libraries are used.
 
 **Option 5:** Normalizes cuDNN symlinks in the detected CUDA library directory to avoid `ldconfig` warnings (see **Note 1** below).
 
@@ -89,6 +90,17 @@ Reboot your system or re-source the `~/.bashrc` file to ensure that the environm
 ```bash
 source ~/.bashrc
 ```
+
+### Verify GPU usage
+
+If you want to confirm PixInsight is using the GPU, install and run `nvtop` in a terminal:
+
+```bash
+sudo apt install nvtop
+nvtop
+```
+
+Start PixInsight from the same terminal (`PixInsight`) and run StarXTerminator or StarNet2. In `nvtop`, you should see GPU utilization under **Type** = **Compute** for the process.
 
 ## Dry-run mode
 
@@ -119,6 +131,8 @@ For a safe preview, run the installer with `--dry-run` (or `-d`). The script wil
 **Missing or mis-installed cuDNN:** The script installs cuDNN for you; you only need to download the correct cuDNN `.tar.xz` file and provide its full path when prompted. It extracts into `/usr/local/` and places files under the CUDA tree (e.g. `/usr/local/cuda-11.8/`). Depending on the CUDA layout, libraries may live in `targets/x86_64-linux/lib` or `lib64`. The installer normalizes `libcudnn*.so.8` symlinks to avoid `ldconfig` warnings and expects the exact cuDNN version configured in the script (e.g. `libcudnn.so.8.9.4.25` for `CUDNN_VERSION=8.9.4.25`) when creating the `libcudnn.so.8`/`libcudnn.so` chain; if that exact file is missing it will warn and leave existing links unchanged.
 
 **TensorFlow C API installation errors:** Confirm the TensorFlow C API archive extracts successfully and that the contents of the extracted `include/` and `lib/` directories are copied into `/usr/local/include/` and `/usr/local/lib/` respectively, followed by `sudo ldconfig`.
+
+**PixInsight still using CPU TensorFlow:** By default, the installer moves any PixInsight-bundled `libtensorflow*` files from `/opt/PixInsight/bin/lib` into `/opt/PixInsight/bin/lib/backup_tf/` so that the system GPU TensorFlow libraries are used. If you need to restore them later, use the uninstaller’s “Restore PixInsight TF libs” option.
 
 ## Uninstall Script
 

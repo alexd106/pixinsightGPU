@@ -447,6 +447,17 @@ install_tf() {
   # Keep bashrc block consistent
   ensure_bashrc_block
 
+  # Move PixInsight's bundled TensorFlow libs so GPU libs are preferred
+  if [[ -d "$PIXINSIGHT_DIR/bin/lib" ]]; then
+    local pi_libdir="$PIXINSIGHT_DIR/bin/lib"
+    local backup="$pi_libdir/backup_tf"
+    run_cmd mkdir -p "$backup"
+    run_cmd bash -c "shopt -s nullglob; for f in \"$pi_libdir\"/libtensorflow*.so*; do mv -f \"\$f\" \"$backup/\"; done"
+    log_info "Moved PixInsight TensorFlow libs (if any) to $backup"
+  else
+    log_warn "PixInsight lib directory not found at $PIXINSIGHT_DIR/bin/lib; skipping TF lib move."
+  fi
+
   log_info "=== TensorFlow INSTALL COMPLETE ==="
 }
 
