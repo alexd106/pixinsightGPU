@@ -290,6 +290,7 @@ uninstall_all() {
   log_warn "  1) TensorFlow C API (/usr/local/lib/libtensorflow.so*)"
   log_warn "  2) cuDNN (under CUDA include + CUDA libdir)"
   log_warn "  3) CUDA toolkit (/usr/local/cuda-${CUDA_SHORT})"
+  log_warn "Note: This also removes the installer-added .bashrc block, but does NOT restore PixInsight TF libs."
   log_warn "Order: TensorFlow -> cuDNN -> CUDA"
 
   confirm "Proceed with Uninstall All?" || {
@@ -311,9 +312,9 @@ show_menu() {
   echo "===================="
   echo "NOTE: For a safe preview, re-run this program with --dry-run or -d to see what it would do without making changes."
   echo
-  echo "1) Uninstall CUDA"
+  echo "1) Uninstall TensorFlow C API"
   echo "2) Uninstall cuDNN"
-  echo "3) Uninstall TensorFlow C API"
+  echo "3) Uninstall CUDA"
   echo "4) Uninstall All (TF + cuDNN + CUDA)"
   echo "5) Remove bashrc GPU block only"
   echo "6) Restore PixInsight TF libs (if backup exists)"
@@ -326,9 +327,9 @@ show_menu
 while true; do
   read -rp "Enter choice [1-7]: " choice
   case "${choice:-}" in
-    1) log_info "-- Selected: Uninstall CUDA --"; uninstall_cuda ;;
+    1) log_info "-- Selected: Uninstall TensorFlow C API --"; uninstall_tensorflow ;;
     2) log_info "-- Selected: Uninstall cuDNN --"; uninstall_cudnn ;;
-    3) log_info "-- Selected: Uninstall TensorFlow C API --"; uninstall_tensorflow ;;
+    3) log_info "-- Selected: Uninstall CUDA --"; uninstall_cuda ;;
     4) log_info "-- Selected: Uninstall All --"; uninstall_all ;;
     5) log_info "-- Selected: Remove bashrc GPU block only --"; remove_bashrc_block ;;
     6) log_info "-- Selected: Restore PixInsight TF libs --"; restore_pixinsight_tf_libs ;;
