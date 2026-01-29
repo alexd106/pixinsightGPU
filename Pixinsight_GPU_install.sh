@@ -148,8 +148,12 @@ ensure_bashrc_block() {
   block="$BASHRC_MARK_BEGIN
 # CUDA toolkit (for nvcc etc.)
 export PATH=$root/bin:\$PATH
-# CUDA/cuDNN runtime libs
-export LD_LIBRARY_PATH=$libdir:\$LD_LIBRARY_PATH
+# CUDA/cuDNN runtime libs (avoid empty LD_LIBRARY_PATH adding current dir)
+if [ -n \"\$LD_LIBRARY_PATH\" ]; then
+  export LD_LIBRARY_PATH=$libdir:\$LD_LIBRARY_PATH
+else
+  export LD_LIBRARY_PATH=$libdir
+fi
 # TensorFlow GPU memory growth (optional)
 export TF_FORCE_GPU_ALLOW_GROWTH=\"true\"
 $BASHRC_MARK_END"
@@ -221,8 +225,9 @@ normalize_cudnn_symlinks() {
     fi
   done
 
-  # Also ensure libcudnn.so.8 chain is sane if libcudnn.so.8.<x> exists.
-  if [[ -f "$libdir/libcudnn.so.8.9.4" ]]; then
+  # Also ensure libcudnn.so.8 chain is sane for the configured CUDNN_VERSION only.
+  local expected="libcudnn.so.8.${CUDNN_VERSION}"
+  if [[ -f "$libdir/$expected" ]]; then
     if [[ -e "$libdir/libcudnn.so.8" && ! -L "$libdir/libcudnn.so.8" ]]; then
       if ! $did_backup; then
         run_cmd mkdir -p "$backup_dir"
@@ -230,13 +235,15 @@ normalize_cudnn_symlinks() {
       fi
       log_warn "Found non-symlink libcudnn.so.8; backing up"
       run_cmd mv -v "$libdir/libcudnn.so.8" "$backup_dir/"
-      run_cmd ln -sv "libcudnn.so.8.9.4" "$libdir/libcudnn.so.8"
+      run_cmd ln -sv "$expected" "$libdir/libcudnn.so.8"
     elif [[ ! -e "$libdir/libcudnn.so.8" ]]; then
-      run_cmd ln -sv "libcudnn.so.8.9.4" "$libdir/libcudnn.so.8"
+      run_cmd ln -sv "$expected" "$libdir/libcudnn.so.8"
     fi
     if [[ ! -e "$libdir/libcudnn.so" ]]; then
       run_cmd ln -sv "libcudnn.so.8" "$libdir/libcudnn.so"
     fi
+  else
+    log_warn "Expected cuDNN file not found for configured CUDNN_VERSION: $libdir/$expected"
   fi
 
   log_info "cuDNN symlink normalization complete."
