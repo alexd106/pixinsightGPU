@@ -143,9 +143,9 @@ The uninstaller script provides a controlled way to remove the GPU stack install
 1) **Uninstall TensorFlow C API**: Removes `libtensorflow.so*` from `/usr/local/lib` and TensorFlow headers from `/usr/local/include/tensorflow`.
 2) **Uninstall cuDNN**: Removes cuDNN headers and libraries from the detected CUDA paths.
 3) **Uninstall CUDA**: Removes the versioned CUDA toolkit, the CUDA linker config file, and the installer’s `.bashrc` block.
-4) **Uninstall All (TF + cuDNN + CUDA)**: Runs options 1 → 2 → 3 in order. This also removes the `.bashrc` GPU block via the CUDA removal step, but does **not** restore PixInsight’s bundled TensorFlow libs.
+4) **Uninstall All (TF + cuDNN + CUDA)**: Runs options 1 → 2 → 3 in order. This also removes the `.bashrc` GPU block via the CUDA removal step, but does **not** restore PixInsight’s bundled TensorFlow libs. To restore the TensorFlow libs run option 6 next.
 5) **Remove bashrc GPU block only**: Deletes only the installer‑added environment block from `~/.bashrc`.
-6) **Restore PixInsight TF libs (if backup exists)**: Moves `libtensorflow*` back from `/opt/PixInsight/bin/lib/backup_tf/` into `/opt/PixInsight/bin/lib`.
+6) **Restore PixInsight TF libs (if backup exists)**: Moves `libtensorflow*` back from `/opt/PixInsight/bin/lib/backup_tf/` created during installation into `/opt/PixInsight/bin/lib`. 
 7) **Quit**
 
 ### What it can remove
