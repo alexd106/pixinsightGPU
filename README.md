@@ -107,9 +107,9 @@ Start PixInsight from the same terminal (`PixInsight`) and run StarXTerminator o
 For a safe preview, run the installer with `--dry-run` (or `-d`). The script will print the commands it would execute without making changes:
 
 ```bash
-./Pixinsight_GPU_install.sh --dry-run
+sudo ./Pixinsight_GPU_install.sh --dry-run
 # or
-./Pixinsight_GPU_install.sh -d
+sudo ./Pixinsight_GPU_install.sh -d
 ```
 
 ## Notes
@@ -160,9 +160,9 @@ The **Uninstall All** option removes components in a dependency-safe order:
 For a safe preview, run the uninstaller with `--dry-run` (or `-d`). The script will print the commands it would execute without making changes:
 
 ```bash
-./Pixinsight_GPU_uninstall.sh --dry-run
+sudo ./Pixinsight_GPU_uninstall.sh --dry-run
 # or
-./Pixinsight_GPU_uninstall.sh.sh -d
+sudo ./Pixinsight_GPU_uninstall.sh -d
 ```
 
 ## Additional Information
